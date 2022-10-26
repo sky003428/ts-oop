@@ -4,11 +4,11 @@ const rl = readline.createInterface({
     output: process.stdout,
 });
 
-const answerLength = 4;
-let gameTimes = 10;
+const answerLength: number = 4;
+let gameTimes: number = 10;
 
-const arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-let answer = "";
+const arr: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+let answer: string = "";
 
 for (let i = 0; i < answerLength; ++i) {
     const randIndex = Math.floor(Math.random() * (10 - i));
@@ -17,7 +17,7 @@ for (let i = 0; i < answerLength; ++i) {
 
 console.log(`答案是:(${answer})`);
 
-rl.on("line", (input) => {
+rl.on("line", (input: string) => {
     if (new Set(input).size !== answerLength) {
         console.log("輸入長度錯誤或數字重複");
         return;
@@ -26,8 +26,8 @@ rl.on("line", (input) => {
         return;
     }
 
-    let a = 0;
-    let b = 0;
+    let a: number = 0;
+    let b: number = 0;
     --gameTimes;
 
     for (let i = 0; i < answerLength; ++i) {
