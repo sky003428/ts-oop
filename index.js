@@ -1,59 +1,60 @@
-const readline = require("readline");
+import * as readline from "readline";
+import Game_1a2b from "./game-1a2b.js";
+import Game_guess from "./game-guess.js";
+
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-const answerLength = 4;
-let gameTimes = 10;
+let gid = "0";
 
-const arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-let answer = "";
+const question = () => {
+    return new Promise((resolve, reject) => {
+        rl.question("遊戲選擇\n1-1a2b \n2-終極密碼 :", (input) => {
+            gid = input;
+            resolve();
+        });
+    });
+};
 
-for (let i = 0; i < answerLength; ++i) {
-    const randIndex = Math.floor(Math.random() * (10 - i));
-    answer += arr.splice(randIndex, 1)[0];
-}
+const play = () => {
+    return new Promise((resolve, reject) => {
+        let g;
+        switch (gid) {
+            case "1":
+                g = new Game_1a2b();
+                break;
+            case "2":
+                g = new Game_guess();
+                break;
+            default:
+                rl.close();
+                resolve();
+        }
 
-console.log(`答案是:(${answer})`);
+        console.log(`答案是:${g.answer}`);
+        console.log(`遊戲"${g.name}",請輸入:`);
 
-rl.on("line", (input) => {
-    if (new Set(input).size !== answerLength) {
-        console.log("輸入長度錯誤或數字重複");
-        return;
-    } else if (Array.from(input, Number).includes(NaN)) {
-        console.log("包含非法字元");
-        return;
-    }
+        rl.on("line", (input) => {
+            const result = g.guess(input);
+            console.log(result.message);
 
-    let a = 0;
-    let b = 0;
-    --gameTimes;
-
-    for (let i = 0; i < answerLength; ++i) {
-        const compareIndex = answer.indexOf(input[i]);
-        if (compareIndex >= 0) {
-            if (compareIndex == i) {
-                ++a;
-            } else {
-                ++b;
+            if (result.win || g.gameOver) {
+                rl.close();
+                resolve();
             }
-        }
-    }
-
-    if (input === answer) {
-        console.log("答對了!!");
-        rl.close();
-    } else {
-        console.log(`答錯了:${a}A${b}B`);
-        if (gameTimes < 1) {
-            console.log(`公布答案:${answer}`);
-            rl.close();
-        }
-    }
-});
+        });
+    });
+};
 
 rl.on("close", () => {
     console.log("Goodbye!");
     process.exit(0);
 });
+const start = async () => {
+    await question();
+    await play();
+};
+
+start();
