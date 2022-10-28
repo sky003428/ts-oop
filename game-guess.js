@@ -20,15 +20,15 @@ class Game_guess extends game_1.default {
         if (isNaN(inputNumber) || !Number.isInteger(inputNumber)) {
             this.output.error = true;
             this.output.message = "輸入非整數";
-            return this.output;
+            return;
         }
         else if (inputNumber < this.rangeMin || inputNumber > this.rangeMax) {
             this.output.error = true;
             this.output.message = "數字不在範圍內";
-            return this.output;
+            return;
         }
         if (inputNumber === this.answer) {
-            this.output.win = true;
+            this.win = true;
             this.output.message = "答對了!";
         }
         else if (this.answer > inputNumber) {
@@ -39,7 +39,6 @@ class Game_guess extends game_1.default {
             this.output.message = `從${this.rangeMin} ~ ${inputNumber - 1}`;
             this.rangeMax = inputNumber - 1;
         }
-        return this.output;
     }
 }
 exports.default = Game_guess;

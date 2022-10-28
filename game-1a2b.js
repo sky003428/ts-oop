@@ -19,12 +19,12 @@ class Game_1a2b extends game_1.default {
         if (new Set(input).size !== 4) {
             this.output.error = true;
             this.output.message = "輸入長度錯誤或數字重複";
-            return this.output;
+            return;
         }
         else if (Array.from(input, Number).includes(NaN)) {
             this.output.error = true;
             this.output.message = "包含非法字元";
-            return this.output;
+            return;
         }
         --this.gameTimes;
         for (let i = 0; i < 4; ++i) {
@@ -39,18 +39,16 @@ class Game_1a2b extends game_1.default {
             }
         }
         if (input == this.answer) {
-            this.output.win = true;
+            this.win = true;
             this.output.message = "答對了!";
+            return;
         }
-        else {
-            this.output.win = false;
-            this.output.message = `答錯了: ${a}A${b}B`;
-            if (this.gameTimes < 1) {
-                this.gameOver = true;
-                this.output.message = `答錯了: ${a}A${b}B, 公布答案: ${this.answer}`;
-            }
+        this.output.message = `答錯了: ${a}A${b}B`;
+        if (this.gameTimes < 1) {
+            this.gameOver = true;
+            this.output.message = `答錯了: ${a}A${b}B, 公布答案: ${this.answer}`;
+            return;
         }
-        return this.output;
     }
 }
 exports.default = Game_1a2b;

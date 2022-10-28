@@ -21,11 +21,11 @@ export default class Game_1a2b extends Game {
         if (new Set(input).size !== 4) {
             this.output.error = true;
             this.output.message = "輸入長度錯誤或數字重複";
-            return this.output;
+            return;
         } else if (Array.from(input, Number).includes(NaN)) {
             this.output.error = true;
             this.output.message = "包含非法字元";
-            return this.output;
+            return;
         }
 
         --this.gameTimes;
@@ -41,17 +41,16 @@ export default class Game_1a2b extends Game {
         }
 
         if (input == this.answer) {
-            this.output.win = true;
+            this.win = true;
             this.output.message = "答對了!";
-        } else {
-            this.output.win = false;
-            this.output.message = `答錯了: ${a}A${b}B`;
-
-            if (this.gameTimes < 1) {
-                this.gameOver = true;
-                this.output.message = `答錯了: ${a}A${b}B, 公布答案: ${this.answer}`;
-            }
+            return;
         }
-        return this.output;
+
+        this.output.message = `答錯了: ${a}A${b}B`;
+        if (this.gameTimes < 1) {
+            this.gameOver = true;
+            this.output.message = `答錯了: ${a}A${b}B, 公布答案: ${this.answer}`;
+            return;
+        }
     }
 }

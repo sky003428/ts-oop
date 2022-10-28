@@ -5,7 +5,7 @@ const answer: number = Math.ceil(Math.random() * maxNumber);
 
 export default class Game_guess extends Game {
     name: string;
-    readonly answer: number;
+    answer: number;
     rangeMin: number;
     rangeMax: number;
 
@@ -18,20 +18,20 @@ export default class Game_guess extends Game {
         this.rangeMax = maxNumber;
     }
 
-    guess(input: string) {
+    guess(input: string): void {
         const inputNumber: number = +input;
         if (isNaN(inputNumber) || !Number.isInteger(inputNumber)) {
             this.output.error = true;
             this.output.message = "輸入非整數";
-            return this.output;
+            return;
         } else if (inputNumber < this.rangeMin || inputNumber > this.rangeMax) {
             this.output.error = true;
             this.output.message = "數字不在範圍內";
-            return this.output;
+            return;
         }
 
         if (inputNumber === this.answer) {
-            this.output.win = true;
+            this.win = true;
             this.output.message = "答對了!";
         } else if (this.answer > inputNumber) {
             this.output.message = `${inputNumber + 1} ~ ${this.rangeMax}`;
@@ -40,6 +40,5 @@ export default class Game_guess extends Game {
             this.output.message = `從${this.rangeMin} ~ ${inputNumber - 1}`;
             this.rangeMax = inputNumber - 1;
         }
-        return this.output;
     }
 }
