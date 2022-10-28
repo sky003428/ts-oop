@@ -27,43 +27,42 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const readline = __importStar(require("readline"));
-const game_1a2b_1 = __importDefault(require("./game-1a2b"));
-const game_guess_1 = __importDefault(require("./game-guess"));
+const game1a2b_1 = __importDefault(require("./game1a2b"));
+const gameGuess_1 = __importDefault(require("./gameGuess"));
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
-let gid = 0;
-const question = () => {
-    return new Promise((resolve, reject) => {
-        rl.question("遊戲選擇\n1-1a2b \n2-終極密碼\n:", (input) => {
-            gid = +input;
-            resolve();
-        });
-    });
+var GameId;
+(function (GameId) {
+    GameId[GameId["Game1a2b"] = 1] = "Game1a2b";
+    GameId[GameId["GameGuess"] = 2] = "GameGuess";
+})(GameId || (GameId = {}));
+const gameSelect = (id) => {
+    switch (id) {
+        case GameId.Game1a2b:
+            return new game1a2b_1.default();
+        case GameId.GameGuess:
+            return new gameGuess_1.default();
+        default:
+            return false;
+    }
 };
-const play = () => {
-    return new Promise((resolve, reject) => {
-        let g;
-        switch (gid) {
-            case 1:
-                g = new game_1a2b_1.default();
-                break;
-            case 2:
-                g = new game_guess_1.default();
-                break;
-            default:
-                rl.close();
-                resolve();
+const start = () => {
+    rl.question("遊戲選擇\n1-1a2b \n2-終極密碼:", (input) => {
+        let g = gameSelect(+input);
+        if (!g) {
+            console.log("無此遊戲\n");
+            start();
+            return;
         }
-        console.log(`答案是:${g.answer}`);
-        console.log(`遊戲"${g.name}",請輸入:`);
+        console.log(`\n--------${g.name}--------答案(${g.answer})`);
+        console.log(`請作答:`);
         rl.on("line", (input) => {
             g.guess(input);
-            console.log(g.output.message);
-            if (g.win || g.gameOver) {
+            g.display();
+            if (g.isOver()) {
                 rl.close();
-                resolve();
             }
         });
     });
@@ -72,8 +71,4 @@ rl.on("close", () => {
     console.log("Goodbye!");
     process.exit(0);
 });
-const start = async () => {
-    await question();
-    await play();
-};
 start();
