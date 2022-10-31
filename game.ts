@@ -15,12 +15,13 @@
 export default abstract class Game {
     abstract readonly id: number;
     abstract readonly name: string;
+    protected input: string = "";
     protected output: string = "";
     protected win: boolean = false;
     protected gameOver: boolean = false;
 
-    // abstract valid(): void;
-    abstract guess(input: string): void;
+    abstract isValid(input: string): boolean;
+    abstract guess(): void;
     abstract display(): void;
     abstract isOver(): boolean;
 }

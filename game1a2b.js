@@ -21,20 +21,24 @@ class Game1a2b extends game_1.default {
         this._gameTimes = 10;
         this._answer = answer();
     }
-    guess(input) {
+    isValid(i) {
+        if (new Set(i).size !== 4) {
+            this.output = "輸入長度錯誤或數字重複";
+            return false;
+        }
+        else if (Array.from(i, Number).includes(NaN)) {
+            this.output = "包含非法字元";
+            return false;
+        }
+        this.input = i;
+        return true;
+    }
+    guess() {
         let a = 0;
         let b = 0;
-        if (new Set(input).size !== 4) {
-            this.output = "輸入長度錯誤或數字重複";
-            return;
-        }
-        else if (Array.from(input, Number).includes(NaN)) {
-            this.output = "包含非法字元";
-            return;
-        }
         --this._gameTimes;
         for (let i = 0; i < 4; ++i) {
-            const compareIndex = this._answer.indexOf(input[i]);
+            const compareIndex = this._answer.indexOf(this.input[i]);
             if (compareIndex >= 0) {
                 if (compareIndex == i) {
                     ++a;
@@ -44,7 +48,7 @@ class Game1a2b extends game_1.default {
                 }
             }
         }
-        if (input == this._answer) {
+        if (this.input == this._answer) {
             this.win = true;
             this.output = "答對了!";
             return;
@@ -64,3 +68,4 @@ class Game1a2b extends game_1.default {
     }
 }
 exports.default = Game1a2b;
+const a = new Game1a2b();

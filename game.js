@@ -14,12 +14,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // }
 class Game {
     constructor() {
+        this.input = "";
         this.output = "";
         this.win = false;
         this.gameOver = false;
-        // abstract valid(): void;
-        // abstract display(): void;
-        // abstract isOver(): boolean;
     }
 }
 exports.default = Game;

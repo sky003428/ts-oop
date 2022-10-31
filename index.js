@@ -56,11 +56,13 @@ const start = () => {
             start();
             return;
         }
-        console.log(`\n--------${g.name}--------答案(${g.answer})`);
         console.log(`請作答:`);
         rl.on("line", (input) => {
-            g.guess(input);
+            if (g.isValid(input)) {
+                g.guess();
+            }
             g.display();
+            g.input = "1";
             if (g.isOver()) {
                 rl.close();
             }

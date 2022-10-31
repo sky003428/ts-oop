@@ -34,8 +34,11 @@ const start = (): void => {
 
         console.log(`請作答:`);
         rl.on("line", (input: string): void => {
-            g.guess(input);
+            if (g.isValid(input)) {
+                g.guess();
+            }
             g.display();
+            g.input = "1";
 
             if (g.isOver()) {
                 rl.close();

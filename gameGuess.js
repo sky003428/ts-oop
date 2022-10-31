@@ -15,16 +15,20 @@ class GameGuess extends game_1.default {
         this._rangeMin = 1;
         this._rangeMax = maxNumber;
     }
-    guess(input) {
-        const inputNumber = +input;
-        if (isNaN(inputNumber) || !Number.isInteger(inputNumber)) {
+    isValid(i) {
+        if (isNaN(+i) || !Number.isInteger(+i)) {
             this.output = "輸入非整數";
-            return;
+            return false;
         }
-        else if (inputNumber < this._rangeMin || inputNumber > this._rangeMax) {
+        else if (+i < this._rangeMin || +i > this._rangeMax) {
             this.output = "數字不在範圍內";
-            return;
+            return false;
         }
+        this.input = i;
+        return true;
+    }
+    guess() {
+        const inputNumber = +this.input;
         if (inputNumber === this._answer) {
             this.win = true;
             this.output = "答對了!";

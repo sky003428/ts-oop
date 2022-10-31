@@ -7,18 +7,22 @@ export default class GameGuess extends Game {
     readonly id = 2;
     readonly name: string = "終極密碼";
     private _answer: number = answer;
-    private _rangeMin:number = 1;
+    private _rangeMin: number = 1;
     private _rangeMax = maxNumber;
 
-    guess(input: string): void {
-        const inputNumber: number = +input;
-        if (isNaN(inputNumber) || !Number.isInteger(inputNumber)) {
+    isValid(i: string): boolean {
+        if (isNaN(+i) || !Number.isInteger(+i)) {
             this.output = "輸入非整數";
-            return;
-        } else if (inputNumber < this._rangeMin || inputNumber > this._rangeMax) {
+            return false;
+        } else if (+i < this._rangeMin || +i > this._rangeMax) {
             this.output = "數字不在範圍內";
-            return;
+            return false;
         }
+        this.input = i;
+        return true;
+    }
+    guess(): void {
+        const inputNumber: number = +this.input;
 
         if (inputNumber === this._answer) {
             this.win = true;
