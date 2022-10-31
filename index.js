@@ -38,20 +38,20 @@ var GameId;
     GameId[GameId["Game1a2b"] = 1] = "Game1a2b";
     GameId[GameId["GameGuess"] = 2] = "GameGuess";
 })(GameId || (GameId = {}));
-const gameSelect = (id) => {
+function gameSelect(id) {
     switch (id) {
         case GameId.Game1a2b:
             return new game1a2b_1.default();
         case GameId.GameGuess:
             return new gameGuess_1.default();
         default:
-            return false;
+            return undefined;
     }
-};
+}
 const start = () => {
     rl.question("遊戲選擇\n1-1a2b \n2-終極密碼:", (input) => {
         let g = gameSelect(+input);
-        if (!g) {
+        if (g === undefined) {
             console.log("無此遊戲\n");
             start();
             return;
@@ -62,7 +62,6 @@ const start = () => {
                 g.guess();
             }
             g.display();
-            g.input = "1";
             if (g.isOver()) {
                 rl.close();
             }
@@ -73,4 +72,5 @@ rl.on("close", () => {
     console.log("Goodbye!");
     process.exit(0);
 });
+// stash
 start();

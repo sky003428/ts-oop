@@ -1,20 +1,6 @@
-// export default class Game {
-//     id: number;
-//     output: Output;
-//     win: boolean;
-//     gameOver: boolean;
-
-//     constructor() {
-//         this.id = 0;
-//         this.output = { error: false, message: "" };
-//         this.win = false;
-//         this.gameOver = false;
-//     }
-// }
-
 export default abstract class Game {
-    abstract readonly id: number;
-    abstract readonly name: string;
+    public static readonly id: number;
+    public static readonly gameName: string;
     protected input: string = "";
     protected output: string = "";
     protected win: boolean = false;

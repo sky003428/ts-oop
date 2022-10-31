@@ -1,22 +1,36 @@
 import Game from "./game";
 
-const answer = (): string => {
-    const pool: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-    let a: string = "";
+// const answer = (): string => {
+//     // function
+//     const pool: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+//     let a: string = "";
 
-    for (let i = 0; i < 4; ++i) {
-        const randIndex: number = Math.floor(Math.random() * (10 - i));
-        a += pool.splice(randIndex, 1)[0];
-    }
+//     for (let i = 0; i < 4; ++i) {
+//         const randIndex: number = Math.floor(Math.random() * (10 - i));
+//         a += pool.splice(randIndex, 1)[0];
+//     }
 
-    return a;
-};
+//     return a;
+// };
 
 export default class Game1a2b extends Game {
-    readonly id: number = 1;
-    readonly name: string = "1A2B";
-    private _gameTimes: number = 10;
-    private _answer: string = answer();
+    public static readonly id: number = 1; //static
+    public static readonly gameName: string = "1A2B";
+    private gameTimes: number = 10;
+    private answer: string = this.getAnswer();
+
+    private getAnswer(): string {
+        // function
+        const pool: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let a: string = "";
+
+        for (let i = 0; i < 4; ++i) {
+            const randIndex: number = Math.floor(Math.random() * (10 - i));
+            a += pool.splice(randIndex, 1)[0];
+        }
+
+        return a;
+    }
 
     isValid(i: string): boolean {
         if (new Set(i).size !== 4) {
@@ -34,9 +48,9 @@ export default class Game1a2b extends Game {
         let a = 0;
         let b = 0;
 
-        --this._gameTimes;
+        --this.gameTimes;
         for (let i = 0; i < 4; ++i) {
-            const compareIndex = this._answer.indexOf(this.input[i]);
+            const compareIndex = this.answer.indexOf(this.input[i]);
             if (compareIndex >= 0) {
                 if (compareIndex == i) {
                     ++a;
@@ -46,16 +60,16 @@ export default class Game1a2b extends Game {
             }
         }
 
-        if (this.input == this._answer) {
+        if (this.input == this.answer) {
             this.win = true;
             this.output = "答對了!";
             return;
         }
 
         this.output = `答錯了: ${a}A${b}B`;
-        if (this._gameTimes < 1) {
+        if (this.gameTimes < 1) {
             this.gameOver = true;
-            this.output = `答錯了: ${a}A${b}B, 公布答案: ${this._answer}`;
+            this.output = `答錯了: ${a}A${b}B, 公布答案: ${this.answer}`;
             return;
         }
     }

@@ -4,22 +4,31 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const game_1 = __importDefault(require("./game"));
-const answer = () => {
-    const pool = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-    let a = "";
-    for (let i = 0; i < 4; ++i) {
-        const randIndex = Math.floor(Math.random() * (10 - i));
-        a += pool.splice(randIndex, 1)[0];
-    }
-    return a;
-};
+// const answer = (): string => {
+//     // function
+//     const pool: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+//     let a: string = "";
+//     for (let i = 0; i < 4; ++i) {
+//         const randIndex: number = Math.floor(Math.random() * (10 - i));
+//         a += pool.splice(randIndex, 1)[0];
+//     }
+//     return a;
+// };
 class Game1a2b extends game_1.default {
     constructor() {
         super(...arguments);
-        this.id = 1;
-        this.name = "1A2B";
-        this._gameTimes = 10;
-        this._answer = answer();
+        this.gameTimes = 10;
+        this.answer = this.getAnswer();
+    }
+    getAnswer() {
+        // function
+        const pool = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let a = "";
+        for (let i = 0; i < 4; ++i) {
+            const randIndex = Math.floor(Math.random() * (10 - i));
+            a += pool.splice(randIndex, 1)[0];
+        }
+        return a;
     }
     isValid(i) {
         if (new Set(i).size !== 4) {
@@ -36,9 +45,9 @@ class Game1a2b extends game_1.default {
     guess() {
         let a = 0;
         let b = 0;
-        --this._gameTimes;
+        --this.gameTimes;
         for (let i = 0; i < 4; ++i) {
-            const compareIndex = this._answer.indexOf(this.input[i]);
+            const compareIndex = this.answer.indexOf(this.input[i]);
             if (compareIndex >= 0) {
                 if (compareIndex == i) {
                     ++a;
@@ -48,15 +57,15 @@ class Game1a2b extends game_1.default {
                 }
             }
         }
-        if (this.input == this._answer) {
+        if (this.input == this.answer) {
             this.win = true;
             this.output = "答對了!";
             return;
         }
         this.output = `答錯了: ${a}A${b}B`;
-        if (this._gameTimes < 1) {
+        if (this.gameTimes < 1) {
             this.gameOver = true;
-            this.output = `答錯了: ${a}A${b}B, 公布答案: ${this._answer}`;
+            this.output = `答錯了: ${a}A${b}B, 公布答案: ${this.answer}`;
             return;
         }
     }
@@ -68,4 +77,6 @@ class Game1a2b extends game_1.default {
     }
 }
 exports.default = Game1a2b;
+Game1a2b.id = 1; //static
+Game1a2b.gameName = "1A2B";
 const a = new Game1a2b();
