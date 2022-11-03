@@ -26,15 +26,18 @@ export class Monster {
 
     async init(): Promise<void> {
         return new Promise((res, rej): void => {
-            const sql = "SELECT * FROM monster WHERE name = ? ORDER BY born_at DESC LIMIT 1";
-            db.query(sql, this.name, (err, [row]): void => {
-                if (err) {
-                    throw err;
-                }
+            db.query(
+                "SELECT * FROM monster WHERE name = ? ORDER BY born_at DESC LIMIT 1",
+                this.name,
+                (err, [row]): void => {
+                    if (err) {
+                        throw err;
+                    }
 
-                this.data = row;
-                res();
-            });
+                    this.data = row;
+                    res();
+                }
+            );
         });
     }
 
@@ -46,7 +49,7 @@ export class Monster {
         this.data.hp -= dmg;
         if (this.data.hp <= 0) {
             this.data.ks = playerName;
-            
+
             db.query(
                 "UPDATE monster SET hp = ?, ks = ? WHERE id = ?;",
                 [this.data.hp, playerName, this.data.id],

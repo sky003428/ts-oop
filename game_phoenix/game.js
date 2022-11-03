@@ -31,9 +31,9 @@ class Game {
             this.output = "已經擊敗過鳳凰";
             return;
         }
-        const data = await this.monster.init();
+        await this.monster.init();
         const monsterData = this.monster.getData();
-        if (monsterData.hp <= 0) {
+        if (!monsterData || (monsterData === null || monsterData === void 0 ? void 0 : monsterData.hp) <= 0) {
             this.output = "怪物已死亡";
             return;
         }

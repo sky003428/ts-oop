@@ -1,5 +1,4 @@
 import db from "./db";
-import { Monster } from "./monster";
 
 export interface P {
     id: number;
@@ -51,7 +50,7 @@ export class Player {
     }
 
     attack(): number {
-        const dmg = Math.ceil(Math.random() * 5);
+        const dmg: number = Math.ceil(Math.random() * 5);
         return dmg;
     }
 

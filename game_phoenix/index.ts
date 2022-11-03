@@ -7,7 +7,7 @@ const rl = readline.createInterface({
 });
 
 const start = (): void => {
-    const g = new Game();
+    const g: Game = new Game();
     rl.question("請輸入暱稱: ", (input: string): void => {
         (async function () {
             if (!g.isValid(input)) {
@@ -19,7 +19,7 @@ const start = (): void => {
             g.display();
             await g.play();
             g.display();
-            
+
             if (g.isOver()) {
                 rl.close();
             }

@@ -19,8 +19,7 @@ class Monster {
     }
     async init() {
         return new Promise((res, rej) => {
-            const sql = "SELECT * FROM monster WHERE name = ? ORDER BY born_at DESC LIMIT 1";
-            db_1.default.query(sql, this.name, (err, [row]) => {
+            db_1.default.query("SELECT * FROM monster WHERE name = ? ORDER BY born_at DESC LIMIT 1", this.name, (err, [row]) => {
                 if (err) {
                     throw err;
                 }
@@ -36,7 +35,6 @@ class Monster {
         this.data.hp -= dmg;
         if (this.data.hp <= 0) {
             this.data.ks = playerName;
-            console.log("SQL", this.data.hp, playerName, this.data.id);
             db_1.default.query("UPDATE monster SET hp = ?, ks = ? WHERE id = ?;", [this.data.hp, playerName, this.data.id], (err) => {
                 if (err) {
                     throw err;
