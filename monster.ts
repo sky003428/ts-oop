@@ -20,7 +20,7 @@ export class Monster {
             if (err) {
                 throw err;
             }
-            console.log("鳳凰已經重生");
+            console.log("phoenix reborn");
         });
     }
 
