@@ -17,7 +17,7 @@ export class Monster {
     }
     static respawn(): Promise<void> {
         return new Promise((res, rej): void => {
-            db.query("INSERT INTO monster1 (name, hp) VALUES (?, ?)", ["鳳凰", 10000], (err) => {
+            db.query("INSERT INTO monster (name, hp) VALUES (?, ?)", ["鳳凰", 10000], (err) => {
                 if (err) {
                     return rej(err);
                 }
