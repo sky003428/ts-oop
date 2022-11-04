@@ -23,9 +23,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const mysql = __importStar(require("mysql"));
-const db = mysql.createPool({
-    host: "172.17.0.2",
+const Mysql = __importStar(require("mysql"));
+const db = Mysql.createPool({
+    host: "localhost",
     user: "root",
     password: "admin",
     database: "phoenix",

@@ -22,37 +22,38 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const readline = __importStar(require("readline"));
-const game_1 = __importDefault(require("./game"));
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-});
+const ReadLine = __importStar(require("readline-sync"));
+const game_1 = require("./game");
 const start = () => {
-    const g = new game_1.default();
-    rl.question("Enter your name: ", (input) => {
-        (async function () {
-            if (!g.isValid(input)) {
-                g.display();
-                start();
-                return;
-            }
-            await g.login();
-            g.display();
-            await g.play();
-            g.display();
-            if (g.isOver()) {
-                rl.close();
-            }
-        })();
-    });
+    const g = new game_1.Game();
+    const input = ReadLine.question("Enter your name: ");
+    if (!g.isValid(input)) {
+        g.display();
+        start();
+        return;
+    }
+    (async () => {
+        let resError = false;
+        resError = await g.login();
+        g.display();
+        if (resError) {
+            start();
+            return;
+        }
+        resError = await g.play();
+        g.display();
+        if (resError) {
+            start();
+            return;
+        }
+        if (g.isOver()) {
+            close();
+        }
+    })();
 };
-rl.on("close", () => {
+function close() {
     console.log("Goodbye!");
     // process.exit(0);
-});
+}
 start();

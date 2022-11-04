@@ -9,38 +9,46 @@ class Monster {
     constructor(name) {
         this.name = name;
     }
-    static reborn() {
-        db_1.default.query("INSERT INTO monster (name, hp) VALUES (?, ?)", ["鳳凰", 10000], (err) => {
-            if (err) {
-                throw err;
-            }
-            console.log("phoenix reborn");
+    static respawn() {
+        return new Promise((res, rej) => {
+            db_1.default.query("INSERT INTO monster1 (name, hp) VALUES (?, ?)", ["鳳凰", 10000], (err) => {
+                if (err) {
+                    return rej(err);
+                }
+                console.log("phoenix reborn!!");
+                res();
+            });
         });
     }
     async init() {
         return new Promise((res, rej) => {
-            db_1.default.query("SELECT * FROM monster WHERE name = ? ORDER BY born_at DESC LIMIT 1", this.name, (err, [row]) => {
+            db_1.default.query("SELECT * FROM monster WHERE name = ? ORDER BY born_at DESC LIMIT 1", this.name, (err, row) => {
                 if (err) {
-                    throw err;
+                    return rej(err);
                 }
-                this.data = row;
-                res();
+                res(row[0]);
             });
         });
     }
     getData() {
         return this.data;
     }
-    beAttack(dmg, playerName) {
+    setData(data) {
+        this.data = data;
+    }
+    beAttack(dmg) {
         this.data.hp -= dmg;
-        if (this.data.hp <= 0) {
+    }
+    async monsterDie(playerName) {
+        return new Promise((res, rej) => {
             this.data.ks = playerName;
             db_1.default.query("UPDATE monster SET hp = ?, ks = ? WHERE id = ?;", [this.data.hp, playerName, this.data.id], (err) => {
                 if (err) {
-                    throw err;
+                    return rej(err);
                 }
+                res();
             });
-        }
+        });
     }
 }
 exports.Monster = Monster;
