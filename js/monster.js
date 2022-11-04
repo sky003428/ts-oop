@@ -11,7 +11,7 @@ class Monster {
     }
     static respawn() {
         return new Promise((res, rej) => {
-            db_1.default.query("INSERT INTO monster1 (name, hp) VALUES (?, ?)", ["鳳凰", 10000], (err) => {
+            db_1.default.query("INSERT INTO monster (name, hp) VALUES (?, ?)", ["鳳凰", 10000], (err) => {
                 if (err) {
                     return rej(err);
                 }
@@ -20,7 +20,7 @@ class Monster {
             });
         });
     }
-    async init() {
+    init() {
         return new Promise((res, rej) => {
             db_1.default.query("SELECT * FROM monster WHERE name = ? ORDER BY born_at DESC LIMIT 1", this.name, (err, row) => {
                 if (err) {
@@ -39,7 +39,7 @@ class Monster {
     beAttack(dmg) {
         this.data.hp -= dmg;
     }
-    async monsterDie(playerName) {
+    monsterDie(playerName) {
         return new Promise((res, rej) => {
             this.data.ks = playerName;
             db_1.default.query("UPDATE monster SET hp = ?, ks = ? WHERE id = ?;", [this.data.hp, playerName, this.data.id], (err) => {

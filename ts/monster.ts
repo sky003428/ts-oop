@@ -28,7 +28,7 @@ export class Monster {
         });
     }
 
-    public async init(): Promise<M> {
+    public init(): Promise<M> {
         return new Promise((res, rej): void => {
             db.query(
                 "SELECT * FROM monster WHERE name = ? ORDER BY born_at DESC LIMIT 1",
@@ -56,7 +56,7 @@ export class Monster {
         this.data.hp -= dmg;
     }
 
-    public async monsterDie(playerName: string): Promise<void> {
+    public monsterDie(playerName: string): Promise<void> {
         return new Promise((res, rej) => {
             this.data.ks = playerName;
             db.query(

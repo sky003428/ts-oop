@@ -73,23 +73,17 @@ class Game {
                     return true;
                 }
                 this.output = `Phoenix had been killed, Attack:${attackTimes} times - ${totalDamage} damages`;
-                setTimeout(async () => {
-                    try {
-                        await monster_1.Monster.respawn();
-                    }
-                    catch (err) {
+                setTimeout(() => {
+                    monster_1.Monster.respawn().catch((err) => {
                         console.log("Error!Server can't respawn monster\n" + err);
-                    }
+                    });
                 }, 1000 * 5);
             }
             if (this.monster.getData().ks == this.player.name) {
                 this.output += ', Get "feather"';
-                try {
-                    await this.player.updateFeather();
-                }
-                catch (err) {
+                await this.player.updateFeather().catch((err) => {
                     console.log("Error!Server can't updateFeather\n" + err);
-                }
+                });
                 this.gameOver = true;
             }
         }

@@ -46,7 +46,7 @@ class Player {
     }
     updateFeather() {
         return new Promise((res, rej) => {
-            db_1.default.query("UPDATE player SET feather = 1 WHERE id = ?", this.id, (err, row) => {
+            db_1.default.query("UPDATE player1 SET feather = 1 WHERE id = ?", this.id, (err, row) => {
                 if (err) {
                     return rej(err);
                 }
