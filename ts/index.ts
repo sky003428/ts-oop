@@ -34,7 +34,7 @@ const start = (): void => {
 };
 
 function close() {
-    console.log("Goodbye !");
+    console.log("Goodbye!");
     // process.exit(0);
 }
 
