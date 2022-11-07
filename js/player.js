@@ -18,7 +18,7 @@ class Player {
         return new Promise((res, rej) => {
             db_1.default.query("SELECT * FROM player WHERE name = ?", name, (err, row) => {
                 if (err) {
-                    rej(err);
+                    return rej(err);
                 }
                 if (row[0]) {
                     row[0].title = JSON.parse(row[0].title);
@@ -34,7 +34,7 @@ class Player {
         return new Promise((res, rej) => {
             db_1.default.query("INSERT INTO `player` (`name`) VALUES (?)", name, (err, row) => {
                 if (err) {
-                    rej(err);
+                    return rej(err);
                 }
                 res({ id: row.insertId, name, feather: false, title: [] });
             });
@@ -45,10 +45,13 @@ class Player {
         return dmg;
     }
     updateFeather() {
-        db_1.default.query("UPDATE player SET feather = 1 WHERE id = ?", this.id, (err, row) => {
-            if (err) {
-                throw err;
-            }
+        return new Promise((res, rej) => {
+            db_1.default.query("UPDATE player SET feather = 1 WHERE id = ?", this.id, (err, row) => {
+                if (err) {
+                    return rej(err);
+                }
+                res("st");
+            });
         });
     }
 }

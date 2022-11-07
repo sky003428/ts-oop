@@ -22,37 +22,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const readline = __importStar(require("readline"));
-const game_1 = __importDefault(require("./game"));
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
+const Mysql = __importStar(require("mysql"));
+const db = Mysql.createPool({
+    host: "localhost",
+    user: "root",
+    password: "admin",
+    database: "phoenix",
 });
-const start = () => {
-    const g = new game_1.default();
-    rl.question("請輸入暱稱: ", (input) => {
-        (async function () {
-            if (!g.isValid(input)) {
-                g.display();
-                start();
-                return;
-            }
-            await g.login();
-            g.display();
-            await g.play();
-            g.display();
-            if (g.isOver()) {
-                rl.close();
-            }
-        })();
-    });
-};
-rl.on("close", () => {
-    console.log("Goodbye!");
-    // process.exit(0);
-});
-start();
+exports.default = db;

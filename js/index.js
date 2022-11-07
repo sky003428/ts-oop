@@ -23,11 +23,37 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const mysql = __importStar(require("mysql"));
-const db = mysql.createPool({
-    host: "localhost",
-    user: "root",
-    password: "",
-    database: "phoenix",
-});
-exports.default = db;
+const ReadLine = __importStar(require("readline-sync"));
+const game_1 = require("./game");
+const start = () => {
+    const g = new game_1.Game();
+    const input = ReadLine.question("Enter your name: ");
+    if (!g.isValid(input)) {
+        g.display();
+        start();
+        return;
+    }
+    (async () => {
+        let resError = false;
+        resError = await g.login();
+        g.display();
+        if (resError) {
+            start();
+            return;
+        }
+        resError = await g.play();
+        g.display();
+        if (resError) {
+            start();
+            return;
+        }
+        if (g.isOver()) {
+            close();
+        }
+    })();
+};
+function close() {
+    console.log("Goodbye!");
+    // process.exit(0);
+}
+start();

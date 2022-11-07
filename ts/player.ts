@@ -22,11 +22,11 @@ export class Player {
         this.title = title;
     }
 
-    static getPlayerByName(name: string): Promise<P | undefined> {
+    static getPlayerByName(name: string): Promise<P> {
         return new Promise((res, rej): void => {
             db.query("SELECT * FROM player WHERE name = ?", name, (err, row) => {
                 if (err) {
-                    rej(err);
+                    return rej(err);
                 }
                 if (row[0]) {
                     row[0].title = JSON.parse(row[0].title);
@@ -42,23 +42,26 @@ export class Player {
         return new Promise((res, rej): void => {
             db.query("INSERT INTO `player` (`name`) VALUES (?)", name, (err, row) => {
                 if (err) {
-                    rej(err);
+                    return rej(err);
                 }
                 res({ id: row.insertId, name, feather: false, title: [] });
             });
         });
     }
 
-    attack(): number {
+    public attack(): number {
         const dmg: number = Math.ceil(Math.random() * 5);
         return dmg;
     }
 
-    updateFeather(): void {
-        db.query("UPDATE player SET feather = 1 WHERE id = ?", this.id, (err, row) => {
-            if (err) {
-                throw err;
-            }
+    public updateFeather(): Promise<string> {
+        return new Promise((res, rej): void => {
+            db.query("UPDATE player SET feather = 1 WHERE id = ?", this.id, (err, row) => {
+                if (err) {
+                    return rej(err);
+                }
+                res("st");
+            });
         });
     }
 }

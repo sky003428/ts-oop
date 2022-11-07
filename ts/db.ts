@@ -1,10 +1,11 @@
-import * as mysql from "mysql";
+import * as Mysql from "mysql";
 
-const db = mysql.createPool({
+const db = Mysql.createPool({
     host: "localhost",
     user: "root",
-    password: "",
+    password: "admin",
     database: "phoenix",
 });
+
 
 export default db;
