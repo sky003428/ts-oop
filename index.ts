@@ -25,7 +25,7 @@ function gameSelect(id: number): Game {
 }
 
 const start = (): void => {
-    rl.question("遊戲選擇\n1-1a2b \n2-終極密碼:", (input: string): void => {
+    rl.question("遊戲選擇 \n1-1a2b \n2-終極密碼:", (input: string): void => {
         let g = gameSelect(+input);
         if (g === undefined) {
             console.log("無此遊戲\n");
