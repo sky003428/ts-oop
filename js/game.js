@@ -6,13 +6,14 @@ const player_1 = require("./player");
 class Game {
     constructor() {
         this.monster = new monster_1.Monster("鳳凰");
+        this.clients = new Map();
         this.players = new Map();
+        this.playingPlayers = [];
+        this.isPlaying = false;
         this.log = { err: false, msg: "" };
     }
-    isValid(i) {
+    isValid(i, socket) {
         let data;
-        this.log = { err: false, msg: "" };
-        // parse
         try {
             data = JSON.parse(i);
         }
@@ -23,13 +24,13 @@ class Game {
         }
         // 判斷有沒有key type,body 型別
         if (!(typeof data.type == "string") || !(typeof data.body == "string")) {
-            console.log("錯");
-            this.output = { type: "err", body: "Incorrect input" };
+            this.output = { type: "err", body: "Incorrect resquest" };
+            this.sendOutput(socket);
             return { err: true, msg: "Incorrect resquest" };
         }
         return Object.assign(Object.assign({}, this.log), { data });
     }
-    async login(loginName) {
+    async login(loginName, socket) {
         this.log = { err: false, msg: "" };
         let playerData;
         try {
@@ -37,7 +38,9 @@ class Game {
         }
         catch (err) {
             this.log.err = true;
-            this.log.msg = "ERROR! Server can't get player\n" + err;
+            this.log.msg = "ERROR! Server can't get player data\n" + err;
+            this.output = { type: "err", body: "ERROR! Server can't get player data" };
+            this.sendOutput(socket);
             return this.log;
         }
         if (!playerData) {
@@ -47,18 +50,22 @@ class Game {
             catch (err) {
                 this.log.err = true;
                 this.log.msg = "ERROR! Server can't create player\n" + err;
+                this.output = { type: "err", body: "ERROR! Server can't create player" };
+                this.sendOutput(socket);
                 return this.log;
             }
         }
         const { id, name, feather, title } = playerData;
-        this.players.set(name, new player_1.Player(id, name, feather, title));
-        this.output = { type: "msg", body: `player${id} - ${name}登入 title:${title}` };
+        this.output = { type: "msg", body: `player${id} - ${name} has logined, Title:${title}` };
         if (this.monster.getData().id) {
             this.output.body += `Phoenix hp:${this.monster.getData().hp}`;
         }
-        console.log(this.players);
+        this.clients.set(loginName, socket);
+        this.players.set(name, new player_1.Player(id, name, feather, title));
+        return this.log;
     }
     async start() {
+        var _a;
         this.log = { err: false, msg: "" };
         try {
             this.monster.setData(await this.monster.init());
@@ -66,65 +73,104 @@ class Game {
         catch (err) {
             this.log.err = true;
             this.log.msg = "ERROR! Server Can't init monster\n" + err;
+            console.log(this.log);
             return this.log;
         }
-        return this.log;
-    }
-    async play(name) {
-        this.log = { err: false, msg: "" };
-        if (this.monster.getData().hp < 0) {
-            this.output = { type: "msg", body: "Monster was already died!" };
-            return this.log;
+        if ((_a = this.monster.getData()) === null || _a === void 0 ? void 0 : _a.id) {
+            console.log(`怪物 ${this.monster.getData().name},血量:${this.monster.getData().hp} \n`);
         }
-        const player = this.players.get(name);
-        if (player.isGameOver()) {
-            this.output = { type: "msg", body: "You've already kill monster!" };
-            return this.log;
-        }
-        const dmg = player.attack();
-        this.monster.beAttack(dmg);
-        this.output = {
-            type: "fightLog",
-            body: `玩家${name} 造成${dmg}傷害 攻擊${player.attackTimes}次 總傷害${player.totalDamage}`,
-            isGameOver: false,
-        };
-        console.log(name, this.monster.getData().hp);
-        if (this.monster.getData().hp <= 0) {
-            this.output = {
-                type: "fightLog",
-                body: `Phoenix had been killed,${player.name} Attack:${player.attackTimes} times - ${player.totalDamage} damages`,
-                isGameOver: true,
-            };
-            console.log(`Phoenix had been killed,${player.name} Attack:${player.attackTimes} times - ${player.totalDamage} damages`);
-            try {
-                await this.monster.monsterDie(player.name);
-            }
-            catch (err) {
-                this.log.err = true;
-                this.log.msg = "Error! Server can't mod monster";
-                return this.log;
-            }
-            console.log("20秒後重生");
-            setTimeout(() => {
-                monster_1.Monster.respawn()
-                    .then((data) => {
-                    this.monster.setData(data);
-                })
-                    .catch((err) => {
-                    console.log("Error!Server can't respawn monster\n" + err);
-                });
-            }, 1000 * 20);
-        }
-        if (this.monster.getData().ks == player.name) {
-            this.output.body += ', Get "feather"';
-            await player.updateFeather().catch((err) => {
-                console.log("Error!Server can't updateFeather\n" + err);
+        else {
+            await this.monster.respawn().catch((err) => {
+                console.log(err);
             });
         }
         return this.log;
     }
-    getOutput() {
-        return this.output;
+    joinPlay(name, socket) {
+        if (this.monster.getData().hp < 0) {
+            this.output = { type: "msg", body: "Monster was already died!" };
+            this.sendOutput(socket);
+            return;
+        }
+        if (this.players.get(name).isGameOver()) {
+            this.output = { type: "msg", body: "You've already kill monster!" };
+            this.sendOutput(socket);
+            return;
+        }
+        this.playingPlayers.push(name);
+    }
+    play() {
+        this.isPlaying = true;
+        // while (this.monster.getData().hp > 0) {
+        new Promise((res) => {
+            const loop = setInterval(() => {
+                for (let i = 0; i < this.playingPlayers.length; ++i) {
+                    const pName = this.playingPlayers[i];
+                    const player = this.players.get(pName);
+                    const dmg = player.attack();
+                    this.monster.beAttack(dmg);
+                    this.output = {
+                        type: "msg",
+                        body: `Player ${pName}: Attack ${dmg} damages - total:${player.attackTimes} times, ${player.totalDamage} damages`,
+                    };
+                    this.sendOutput(this.clients.get(pName));
+                    if (this.monster.getData().hp <= 0) {
+                        this.isPlaying = false;
+                        this.monster.monsterDie(pName).catch((err) => {
+                            console.log(err);
+                        });
+                        player.updateFeather().catch((err) => {
+                            console.log("Error!Server can't updateFeather\n" + err);
+                        });
+                        clearInterval(loop);
+                        res(pName);
+                        break;
+                    }
+                }
+            }, 0);
+        }).then((ksName) => {
+            this.playingPlayers.forEach((pName) => {
+                const player = this.players.get(pName);
+                const socket = this.clients.get(pName);
+                this.output = {
+                    type: "msg",
+                    body: `Phoenix had been killed, Attack:${player.attackTimes} times - ${player.totalDamage} damages`,
+                };
+                if (pName == ksName) {
+                    this.output.body += `, Get "Feather"`;
+                }
+                this.sendOutput(socket);
+            });
+            this.playingPlayers = [];
+            console.log("Phoenix respawn at 15s");
+            setTimeout(() => {
+                this.monster.respawn().catch((err) => {
+                    console.log("Error!Server can't respawn monster\n" + err);
+                });
+            }, 1000 * 15);
+        });
+    }
+    canPlayed() {
+        if (this.playingPlayers.length > 0 && this.monster.getData().hp > 0 && !this.isPlaying) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    sendOutput(socket) {
+        socket.write(JSON.stringify(this.output));
+    }
+    logOut(port) {
+        const clientsCopy = new Map(this.clients);
+        clientsCopy.forEach((client, key) => {
+            if (port == client.remotePort) {
+                this.clients.delete(key);
+                this.players.delete(key);
+                const index = this.playingPlayers.indexOf(key);
+                index > -1 && this.playingPlayers.splice(index, 1);
+            }
+        });
     }
 }
 exports.Game = Game;

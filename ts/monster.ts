@@ -19,12 +19,13 @@ export class Monster {
     public async init(): Promise<M> {
         return new Promise((res, rej): void => {
             Db.query(
-                "SELECT * FROM monster WHERE name = ? AND hp >= 0 ORDER BY born_at DESC LIMIT 1",
+                "SELECT * FROM monster WHERE name = ? AND hp > 0 ORDER BY born_at DESC LIMIT 1",
                 this.name,
                 (err, row): void => {
                     if (err) {
                         return rej(err);
                     }
+
                     res(row[0]);
                 }
             );
@@ -32,15 +33,16 @@ export class Monster {
     }
 
     // todo:開機沒怪自動生
-    public static respawn(): Promise<M> {
+    public respawn(): Promise<void> {
         return new Promise((res, rej): void => {
             Db.query("INSERT INTO monster (name, hp) VALUES (?, ?)", ["鳳凰", 10000], (err, row) => {
                 if (err) {
                     return rej(err);
                 }
 
-                console.log("phoenix reborn!!");
-                res({ id: row.insertId, name: "鳳凰", hp: 10000, ks: "" });
+                console.log("Phoenix respawn!!");
+                this.data = { id: row.insertId, name: "鳳凰", hp: 10000, ks: "" };
+                res();
             });
         });
     }
@@ -58,9 +60,9 @@ export class Monster {
     }
 
     public monsterDie(playerName: string): Promise<void> {
-        console.log("kill by", playerName);
+        console.log("Phoenix was killed by:", playerName);
+        this.data.ks = playerName;
         return new Promise((res, rej) => {
-            this.data.ks = playerName;
             Db.query(
                 "UPDATE monster SET hp = ?, ks = ? WHERE id = ?;",
                 [this.data.hp, playerName, this.data.id],

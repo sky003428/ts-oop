@@ -41,7 +41,7 @@ class Player {
         });
     }
     attack() {
-        const dmg = Math.ceil(Math.random() * 9);
+        const dmg = Math.ceil(Math.random() * 10) + 10;
         ++this.attackTimes;
         this.totalDamage += dmg;
         return dmg;

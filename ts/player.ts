@@ -15,7 +15,6 @@ export class Player {
     public title: string[];
     public totalDamage: number = 0;
     public attackTimes: number = 0;
-    
 
     constructor(id: number, name: string, feather: boolean, title: string[]) {
         this.id = id;
@@ -52,7 +51,7 @@ export class Player {
     }
 
     public attack(): number {
-        const dmg: number = Math.ceil(Math.random() * 9);
+        const dmg: number = Math.ceil(Math.random() * 10) + 10;
         ++this.attackTimes;
         this.totalDamage += dmg;
         return dmg;
