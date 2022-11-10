@@ -41,10 +41,13 @@ class Player {
         });
     }
     attack() {
-        const dmg = Math.ceil(Math.random() * 5);
+        const dmg = Math.ceil(Math.random() * 9);
+        ++this.attackTimes;
+        this.totalDamage += dmg;
         return dmg;
     }
     updateFeather() {
+        this.feather = true;
         return new Promise((res, rej) => {
             db_1.default.query("UPDATE player SET feather = 1 WHERE id = ?", this.id, (err, row) => {
                 if (err) {
@@ -53,6 +56,9 @@ class Player {
                 res("st");
             });
         });
+    }
+    isGameOver() {
+        return this.feather || this.title.includes("勇者");
     }
 }
 exports.Player = Player;

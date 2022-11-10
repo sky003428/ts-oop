@@ -9,24 +9,25 @@ class Monster {
     constructor(name) {
         this.name = name;
     }
-    static respawn() {
+    async init() {
         return new Promise((res, rej) => {
-            db_1.default.query("INSERT INTO monster (name, hp) VALUES (?, ?)", ["鳳凰", 10000], (err) => {
-                if (err) {
-                    return rej(err);
-                }
-                console.log("phoenix reborn!!");
-                res();
-            });
-        });
-    }
-    init() {
-        return new Promise((res, rej) => {
-            db_1.default.query("SELECT * FROM monster WHERE name = ? ORDER BY born_at DESC LIMIT 1", this.name, (err, row) => {
+            db_1.default.query("SELECT * FROM monster WHERE name = ? AND hp >= 0 ORDER BY born_at DESC LIMIT 1", this.name, (err, row) => {
                 if (err) {
                     return rej(err);
                 }
                 res(row[0]);
+            });
+        });
+    }
+    // todo:開機沒怪自動生
+    static respawn() {
+        return new Promise((res, rej) => {
+            db_1.default.query("INSERT INTO monster (name, hp) VALUES (?, ?)", ["鳳凰", 10000], (err, row) => {
+                if (err) {
+                    return rej(err);
+                }
+                console.log("phoenix reborn!!");
+                res({ id: row.insertId, name: "鳳凰", hp: 10000, ks: "" });
             });
         });
     }
@@ -40,6 +41,7 @@ class Monster {
         this.data.hp -= dmg;
     }
     monsterDie(playerName) {
+        console.log("kill by", playerName);
         return new Promise((res, rej) => {
             this.data.ks = playerName;
             db_1.default.query("UPDATE monster SET hp = ?, ks = ? WHERE id = ?;", [this.data.hp, playerName, this.data.id], (err) => {

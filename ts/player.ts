@@ -1,4 +1,5 @@
 import db from "./db";
+import { R } from "./game";
 
 export interface P {
     id: number;
@@ -10,10 +11,11 @@ export interface P {
 export class Player {
     public readonly id: number;
     public readonly name: string;
-    public readonly feather: boolean;
-    public readonly title: string[];
+    public feather: boolean;
+    public title: string[];
     public totalDamage: number = 0;
     public attackTimes: number = 0;
+    
 
     constructor(id: number, name: string, feather: boolean, title: string[]) {
         this.id = id;
@@ -22,7 +24,7 @@ export class Player {
         this.title = title;
     }
 
-    static getPlayerByName(name: string): Promise<P> {
+    public static getPlayerByName(name: string): Promise<P> {
         return new Promise((res, rej): void => {
             db.query("SELECT * FROM player WHERE name = ?", name, (err, row) => {
                 if (err) {
@@ -38,7 +40,7 @@ export class Player {
         });
     }
 
-    static createPlayerByName(name: string): Promise<P> {
+    public static createPlayerByName(name: string): Promise<P> {
         return new Promise((res, rej): void => {
             db.query("INSERT INTO `player` (`name`) VALUES (?)", name, (err, row) => {
                 if (err) {
@@ -50,11 +52,14 @@ export class Player {
     }
 
     public attack(): number {
-        const dmg: number = Math.ceil(Math.random() * 5);
+        const dmg: number = Math.ceil(Math.random() * 9);
+        ++this.attackTimes;
+        this.totalDamage += dmg;
         return dmg;
     }
 
     public updateFeather(): Promise<string> {
+        this.feather = true;
         return new Promise((res, rej): void => {
             db.query("UPDATE player SET feather = 1 WHERE id = ?", this.id, (err, row) => {
                 if (err) {
@@ -63,5 +68,9 @@ export class Player {
                 res("st");
             });
         });
+    }
+
+    public isGameOver(): boolean {
+        return this.feather || this.title.includes("勇者");
     }
 }

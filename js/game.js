@@ -1,98 +1,130 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Game = void 0;
-const player_1 = require("./player");
 const monster_1 = require("./monster");
+const player_1 = require("./player");
 class Game {
     constructor() {
-        this.input = "";
-        this.output = "";
         this.monster = new monster_1.Monster("鳳凰");
-        this.gameOver = false;
+        this.players = new Map();
+        this.log = { err: false, msg: "" };
     }
     isValid(i) {
-        if (typeof i !== "string" || i.length > 255 || i.trim().length < 1) {
-            this.output = "Incorrect input";
-            return false;
+        let data;
+        this.log = { err: false, msg: "" };
+        // parse
+        try {
+            data = JSON.parse(i);
         }
-        this.input = i.trim();
-        return true;
+        catch (error) {
+            this.log.err = true;
+            this.log.msg = error;
+            return this.log;
+        }
+        // 判斷有沒有key type,body 型別
+        if (!(typeof data.type == "string") || !(typeof data.body == "string")) {
+            console.log("錯");
+            this.output = { type: "err", body: "Incorrect input" };
+            return { err: true, msg: "Incorrect resquest" };
+        }
+        return Object.assign(Object.assign({}, this.log), { data });
     }
-    async login() {
+    async login(loginName) {
+        this.log = { err: false, msg: "" };
         let playerData;
         try {
-            playerData = await player_1.Player.getPlayerByName(this.input);
+            playerData = await player_1.Player.getPlayerByName(loginName);
         }
         catch (err) {
-            this.output = "Error! Sever can't get player data\n" + err;
-            return true;
+            this.log.err = true;
+            this.log.msg = "ERROR! Server can't get player\n" + err;
+            return this.log;
         }
         if (!playerData) {
             try {
-                playerData = await player_1.Player.createPlayerByName(this.input);
+                playerData = await player_1.Player.createPlayerByName(loginName);
             }
             catch (err) {
-                this.output = "Error! Server can't create player\n" + err;
-                return true;
+                this.log.err = true;
+                this.log.msg = "ERROR! Server can't create player\n" + err;
+                return this.log;
             }
         }
         const { id, name, feather, title } = playerData;
-        this.player = new player_1.Player(id, name, feather, title);
-        this.output = `player${id} - ${this.input}登入 title:${title}`;
-    }
-    async play() {
-        var _a;
-        if (this.player.feather || this.player.title.includes("勇者")) {
-            this.output = "You had killed phoenix";
-            return true;
+        this.players.set(name, new player_1.Player(id, name, feather, title));
+        this.output = { type: "msg", body: `player${id} - ${name}登入 title:${title}` };
+        if (this.monster.getData().id) {
+            this.output.body += `Phoenix hp:${this.monster.getData().hp}`;
         }
+        console.log(this.players);
+    }
+    async start() {
+        this.log = { err: false, msg: "" };
         try {
             this.monster.setData(await this.monster.init());
         }
         catch (err) {
-            this.output = "Error! Server Can't init monster\n" + err;
-            return true;
+            this.log.err = true;
+            this.log.msg = "ERROR! Server Can't init monster\n" + err;
+            return this.log;
         }
-        if (!this.monster.getData() || ((_a = this.monster.getData()) === null || _a === void 0 ? void 0 : _a.hp) <= 0) {
-            this.output = "Monster already died";
-            return;
+        return this.log;
+    }
+    async play(name) {
+        this.log = { err: false, msg: "" };
+        if (this.monster.getData().hp < 0) {
+            this.output = { type: "msg", body: "Monster was already died!" };
+            return this.log;
         }
-        let attackTimes = 0;
-        let totalDamage = 0;
-        while (this.monster.getData().hp > 0) {
-            const dmg = this.player.attack();
-            ++attackTimes;
-            totalDamage += dmg;
-            this.monster.beAttack(dmg);
-            if (this.monster.getData().hp <= 0) {
-                try {
-                    await this.monster.monsterDie(this.player.name);
-                }
-                catch (err) {
-                    this.output = "Error! Server can't mod monster" + err;
-                    return true;
-                }
-                this.output = `Phoenix had been killed, Attack:${attackTimes} times - ${totalDamage} damages`;
-                setTimeout(() => {
-                    monster_1.Monster.respawn().catch((err) => {
-                        console.log("Error!Server can't respawn monster\n" + err);
-                    });
-                }, 1000 * 5);
+        const player = this.players.get(name);
+        if (player.isGameOver()) {
+            this.output = { type: "msg", body: "You've already kill monster!" };
+            return this.log;
+        }
+        const dmg = player.attack();
+        this.monster.beAttack(dmg);
+        this.output = {
+            type: "fightLog",
+            body: `玩家${name} 造成${dmg}傷害 攻擊${player.attackTimes}次 總傷害${player.totalDamage}`,
+            isGameOver: false,
+        };
+        console.log(name, this.monster.getData().hp);
+        if (this.monster.getData().hp <= 0) {
+            this.output = {
+                type: "fightLog",
+                body: `Phoenix had been killed,${player.name} Attack:${player.attackTimes} times - ${player.totalDamage} damages`,
+                isGameOver: true,
+            };
+            console.log(`Phoenix had been killed,${player.name} Attack:${player.attackTimes} times - ${player.totalDamage} damages`);
+            try {
+                await this.monster.monsterDie(player.name);
             }
-            if (this.monster.getData().ks == this.player.name) {
-                this.output += ', Get "feather"';
-                await this.player.updateFeather().catch((err) => {
-                    console.log("Error!Server can't updateFeather\n" + err);
+            catch (err) {
+                this.log.err = true;
+                this.log.msg = "Error! Server can't mod monster";
+                return this.log;
+            }
+            console.log("20秒後重生");
+            setTimeout(() => {
+                monster_1.Monster.respawn()
+                    .then((data) => {
+                    this.monster.setData(data);
+                })
+                    .catch((err) => {
+                    console.log("Error!Server can't respawn monster\n" + err);
                 });
-                this.gameOver = true;
-            }
+            }, 1000 * 20);
         }
+        if (this.monster.getData().ks == player.name) {
+            this.output.body += ', Get "feather"';
+            await player.updateFeather().catch((err) => {
+                console.log("Error!Server can't updateFeather\n" + err);
+            });
+        }
+        return this.log;
     }
-    display() {
-        console.log(this.output);
-    }
-    isOver() {
-        return this.gameOver;
+    getOutput() {
+        return this.output;
     }
 }
 exports.Game = Game;
