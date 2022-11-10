@@ -36,37 +36,7 @@ const server: Net.Server = Net.createServer((socket: Net.Socket): void => {
                 game.canPlayed() && game.play();
             })();
         }
-        // if (input.type == "login") {
-        //     console.log(log);
-        //     (async () => {
-        //         await game.login(log.data.body);
-        //         socket.write(JSON.stringify(game.getOutput()));
-
-        //         log = await game.play(input.body);
-        //         socket.write(JSON.stringify(game.getOutput()));
-        //         if (log.err) {
-        //             console.log(log.msg);
-        //         }
-        //     })();
-        //     return;
-        // }
-        // if (input.type == "fight") {
-        //     (async () => {
-        //         const log: GameLog = await game.play(input.body);
-
-        //         socket.write(JSON.stringify(game.getOutput()));
-        //         if (log.err) {
-        //             console.log(log.msg);
-        //             return;
-        //         }
-        //     })();
-        //     return;
-        // }
     });
-
-    // socket.on("disconnect", function () {
-    //     delete clientList[clientId];
-    // });
 
     socket.on("error", (err) => {
         console.log(socket.remotePort, "Abnormal disconnect");
