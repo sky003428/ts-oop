@@ -58,29 +58,13 @@ let name;
             console.log(`${d.type}: ${d.body}`);
             return;
         }
-        if (d.type == "get") {
-            if (d.body == "name") {
-                rl.question("Incorrect! Please enter name again:").then((input) => {
-                    const res = { type: "login", body: input };
-                    name = input;
-                    client.write(JSON.stringify(res));
-                });
-            }
-            else if (d.body == "wait") {
-                rl.question("Phoenix Already Died, Wait For Phoenix,[y/n]").then((input) => {
-                    //    todo
-                    client.write(JSON.stringify(input));
-                });
-            }
-            return;
-        }
-        if (d.type == "fightLog") {
-            console.log(`${d.type}: ${d.body}`);
-            if (!d.isGameOver) {
-                const res = { type: "fight", body: name };
-                client.write(JSON.stringify(res));
-            }
-        }
+        // if (d.type == "fightLog") {
+        //     console.log(`${d.type}: ${d.body}`);
+        //     if (!d.isGameOver) {
+        //         const res: R = { type: "fight", body: name };
+        //         client.write(JSON.stringify(res));
+        //     }
+        // }
     });
     client.on("close", function (data) {
         console.log("Connect close");
