@@ -14,14 +14,12 @@ interface R {
 }
 
 let client: Net.Socket;
-let name: string;
 
 (async () => {
-    const input = await rl.question("Enter Your Name:");
+    const name: string = await rl.question("Enter Your Name:");
     client = Net.createConnection({ host: "127.0.0.1", port: 3000 }, () => {
         client.setNoDelay(true);
-        const req: R = { type: "login", body: input };
-        name = input;
+        const req: R = { type: "login", body: name };
         client.write(JSON.stringify(req));
     });
 
@@ -46,6 +44,14 @@ let name: string;
             rl.question(`${d.body}`).then((input) => {
                 client.write(JSON.stringify({ type: "res", body: input, name }));
             });
+            return;
+        }
+        if (d.type == "fightLog") {
+            console.log(d.body);
+            if (!d.isGameOver) {
+                client.write(JSON.stringify({ type: "fight", body: name }));
+                return;
+            }
         }
     });
     client.on("close", function (data) {

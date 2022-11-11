@@ -62,6 +62,14 @@ let name;
             rl.question(`${d.body}`).then((input) => {
                 client.write(JSON.stringify({ type: "res", body: input, name }));
             });
+            return;
+        }
+        if (d.type == "fightLog") {
+            console.log(d.body);
+            if (!d.isGameOver) {
+                client.write(JSON.stringify({ type: "fight", body: name }));
+                return;
+            }
         }
     });
     client.on("close", function (data) {
