@@ -1,53 +1,48 @@
 import Net from "net";
 import * as ReadLine from "readline/promises";
 
-const rl = ReadLine.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-});
-
-// tcp客戶端
-interface R {
-    type: string;
-    body: string;
-    isGameOver?: boolean;
-}
-
-let client: Net.Socket;
-let name: string;
+const { HOST, PORT } = process.env;
+const game: Game = new Game();
 
 (async () => {
-    const input = await rl.question("Enter Your Name:");
-    client = Net.createConnection({ host: "127.0.0.1", port: 3000 }, () => {
-        const req: R = { type: "login", body: input };
-        name = input;
-        client.write(JSON.stringify(req));
-    });
-
-    client.on("connect", function () {
-        console.log("已經與伺服器端建立連接");
-    });
-
-    client.on("data", function (data: Buffer) {
-        let d: R;
-        try {
-            d = JSON.parse(data.toString());
-        } catch (err) {
-            console.log(data.toString(), err);
-            return;
-        }
-
-        if (d.type == "msg" || d.type == "err") {
-            console.log(`${d.type}: ${d.body}`);
-            return;
-        }
-    });
-
-    client.on("close", function (data) {
-        console.log("Connect close");
-    });
-
-    client.on("error", (err): void => {
-        console.log(err);
-    });
+    const log: GameLog = await game.start();
+    if (log.err) {
+        return;
+    }
 })();
+
+const server: Net.Server = Net.createServer((socket: Net.Socket): void => {
+    console.log("client connected", socket.remotePort, "id");
+    // todo: 紀錄clients,檢查重複登入, 踢掉前一位重複登入
+
+    socket.on("data", (data: Buffer): void => {
+        console.log(data.toString());
+
+        let log: GameLog = game.isValid(data.toString(), socket);
+        if (log.err) {
+            return;
+        }
+
+        const input = log.data;
+
+        if (input.type == "login") {
+            (async () => {
+                log = await game.login(input.body, socket);
+                if (log.err) {
+                    return;
+                }
+                game.joinPlay(input.body, socket);
+                game.canPlayed() && game.play();
+            })();
+        }
+    });
+
+    socket.on("error", (err) => {
+        console.log(socket.remotePort, "Abnormal disconnect");
+        game.logOut(socket.remotePort);
+    });
+});
+
+server.listen({ host: HOST, port: PORT }, () => {
+    console.log(`Server start at ${HOST}:${PORT}`);
+});
