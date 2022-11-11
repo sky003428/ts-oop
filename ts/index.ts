@@ -19,6 +19,7 @@ let name: string;
 (async () => {
     const input = await rl.question("Enter Your Name:");
     client = Net.createConnection({ host: "127.0.0.1", port: 3000 }, () => {
+        client.setNoDelay(true);
         const req: R = { type: "login", body: input };
         name = input;
         client.write(JSON.stringify(req));
@@ -41,8 +42,12 @@ let name: string;
             console.log(`${d.type}: ${d.body}`);
             return;
         }
+        if (d.type == "req") {
+            rl.question(`${d.body}`).then((input) => {
+                client.write(JSON.stringify({ type: "res", body: input, name }));
+            });
+        }
     });
-
     client.on("close", function (data) {
         console.log("Connect close");
     });
