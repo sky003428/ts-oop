@@ -8,6 +8,7 @@ const db_1 = __importDefault(require("./db"));
 class Monster {
     constructor(name) {
         this.name = name;
+        this.name = name;
     }
     async init() {
         return new Promise((res, rej) => {
@@ -19,15 +20,14 @@ class Monster {
             });
         });
     }
-    // todo:開機沒怪自動生
     respawn() {
         return new Promise((res, rej) => {
-            db_1.default.query("INSERT INTO monster (name, hp) VALUES (?, ?)", ["鳳凰", 10000], (err, row) => {
+            db_1.default.query("INSERT INTO monster (name, hp) VALUES (?, ?)", [this.name, 10000], (err, row) => {
                 if (err) {
                     return rej(err);
                 }
                 console.log("Phoenix respawn!!");
-                this.data = { id: row.insertId, name: "鳳凰", hp: 10000, ks: "" };
+                this.data = { id: row.insertId, name: this.name, hp: 10000, ks: "" };
                 res();
             });
         });

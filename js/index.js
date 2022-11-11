@@ -15,6 +15,7 @@ const game = new game_1.Game();
     }
 })();
 const server = net_1.default.createServer((socket) => {
+    socket.setNoDelay(true);
     console.log("client connected", socket.remotePort, "id");
     // todo: 紀錄clients,檢查重複登入, 踢掉前一位重複登入
     socket.on("data", (data) => {
@@ -34,36 +35,24 @@ const server = net_1.default.createServer((socket) => {
                 game.canPlayed() && game.play();
             })();
         }
-        // if (input.type == "login") {
-        //     console.log(log);
-        //     (async () => {
-        //         await game.login(log.data.body);
-        //         socket.write(JSON.stringify(game.getOutput()));
-        //         log = await game.play(input.body);
-        //         socket.write(JSON.stringify(game.getOutput()));
-        //         if (log.err) {
-        //             console.log(log.msg);
-        //         }
-        //     })();
-        //     return;
-        // }
-        // if (input.type == "fight") {
-        //     (async () => {
-        //         const log: GameLog = await game.play(input.body);
-        //         socket.write(JSON.stringify(game.getOutput()));
-        //         if (log.err) {
-        //             console.log(log.msg);
-        //             return;
-        //         }
-        //     })();
-        //     return;
-        // }
+        if (input.type == "res") {
+            // input.name
+            const pattarn = /^Y/im;
+            const answer = pattarn.test(input.body);
+            if (!answer) {
+                socket.end(JSON.stringify({ type: "msg", body: "bye" }));
+                return;
+            }
+            game.playingPlayers.push(input.name);
+            game.canPlayed() && game.play();
+        }
     });
-    // socket.on("disconnect", function () {
-    //     delete clientList[clientId];
-    // });
-    socket.on("error", (err) => {
+    socket.on("error", () => {
         console.log(socket.remotePort, "Abnormal disconnect");
+        game.logOut(socket.remotePort);
+    });
+    socket.on("close", () => {
+        console.log(socket.remotePort, "has disconnected");
         game.logOut(socket.remotePort);
     });
 });

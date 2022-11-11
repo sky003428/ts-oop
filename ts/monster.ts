@@ -9,10 +9,9 @@ export interface M {
 }
 
 export class Monster {
-    private readonly name: string;
     private data: M;
 
-    constructor(name: string) {
+    constructor(private name: string) {
         this.name = name;
     }
 
@@ -32,16 +31,15 @@ export class Monster {
         });
     }
 
-    // todo:開機沒怪自動生
     public respawn(): Promise<void> {
         return new Promise((res, rej): void => {
-            Db.query("INSERT INTO monster (name, hp) VALUES (?, ?)", ["鳳凰", 10000], (err, row) => {
+            Db.query("INSERT INTO monster (name, hp) VALUES (?, ?)", [this.name, 10000], (err, row) => {
                 if (err) {
                     return rej(err);
                 }
 
                 console.log("Phoenix respawn!!");
-                this.data = { id: row.insertId, name: "鳳凰", hp: 10000, ks: "" };
+                this.data = { id: row.insertId, name: this.name, hp: 10000, ks: "" };
                 res();
             });
         });
@@ -61,6 +59,7 @@ export class Monster {
 
     public monsterDie(playerName: string): Promise<void> {
         console.log("Phoenix was killed by:", playerName);
+
         this.data.ks = playerName;
         return new Promise((res, rej) => {
             Db.query(

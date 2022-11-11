@@ -1,5 +1,5 @@
+import Net from "net";
 import db from "./db";
-import { R } from "./game";
 
 export interface P {
     id: number;
@@ -9,18 +9,21 @@ export interface P {
 }
 
 export class Player {
-    public readonly id: number;
-    public readonly name: string;
-    public feather: boolean;
-    public title: string[];
     public totalDamage: number = 0;
     public attackTimes: number = 0;
 
-    constructor(id: number, name: string, feather: boolean, title: string[]) {
+    constructor(
+        public readonly id: number,
+        public readonly name: string,
+        public feather: boolean,
+        public title: string[],
+        public socket: Net.Socket
+    ) {
         this.id = id;
         this.name = name;
         this.feather = feather;
         this.title = title;
+        this.socket = socket;
     }
 
     public static getPlayerByName(name: string): Promise<P> {
@@ -50,8 +53,12 @@ export class Player {
         });
     }
 
-    public attack(): number {
-        const dmg: number = Math.ceil(Math.random() * 10) + 10;
+    public attack(monsterHp: number): number {
+        let dmg: number = Math.ceil(Math.random() * 10) + 10;
+
+        if (monsterHp - dmg < 0) {
+            dmg = monsterHp;
+        }
         ++this.attackTimes;
         this.totalDamage += dmg;
         return dmg;
@@ -71,5 +78,10 @@ export class Player {
 
     public isGameOver(): boolean {
         return this.feather || this.title.includes("勇者");
+    }
+
+    public initAttackLog(): void {
+        this.totalDamage = 0;
+        this.attackTimes = 0;
     }
 }

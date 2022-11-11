@@ -6,13 +6,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Player = void 0;
 const db_1 = __importDefault(require("./db"));
 class Player {
-    constructor(id, name, feather, title) {
+    constructor(id, name, feather, title, socket) {
+        this.id = id;
+        this.name = name;
+        this.feather = feather;
+        this.title = title;
+        this.socket = socket;
         this.totalDamage = 0;
         this.attackTimes = 0;
         this.id = id;
         this.name = name;
         this.feather = feather;
         this.title = title;
+        this.socket = socket;
     }
     static getPlayerByName(name) {
         return new Promise((res, rej) => {
@@ -40,8 +46,11 @@ class Player {
             });
         });
     }
-    attack() {
-        const dmg = Math.ceil(Math.random() * 10) + 10;
+    attack(monsterHp) {
+        let dmg = Math.ceil(Math.random() * 10) + 10;
+        if (monsterHp - dmg < 0) {
+            dmg = monsterHp;
+        }
         ++this.attackTimes;
         this.totalDamage += dmg;
         return dmg;
@@ -59,6 +68,10 @@ class Player {
     }
     isGameOver() {
         return this.feather || this.title.includes("勇者");
+    }
+    initAttackLog() {
+        this.totalDamage = 0;
+        this.attackTimes = 0;
     }
 }
 exports.Player = Player;

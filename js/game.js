@@ -6,7 +6,7 @@ const player_1 = require("./player");
 class Game {
     constructor() {
         this.monster = new monster_1.Monster("鳳凰");
-        this.clients = new Map();
+        // public clients = new Map<string, Net.Socket>();
         this.players = new Map();
         this.playingPlayers = [];
         this.isPlaying = false;
@@ -60,8 +60,7 @@ class Game {
         if (this.monster.getData().id) {
             this.output.body += `Phoenix hp:${this.monster.getData().hp}`;
         }
-        this.clients.set(loginName, socket);
-        this.players.set(name, new player_1.Player(id, name, feather, title));
+        this.players.set(name, new player_1.Player(id, name, feather, title, socket));
         return this.log;
     }
     async start() {
@@ -107,13 +106,13 @@ class Game {
                 for (let i = 0; i < this.playingPlayers.length; ++i) {
                     const pName = this.playingPlayers[i];
                     const player = this.players.get(pName);
-                    const dmg = player.attack();
+                    let dmg = player.attack(this.monster.getData().hp);
                     this.monster.beAttack(dmg);
                     this.output = {
                         type: "msg",
                         body: `Player ${pName}: Attack ${dmg} damages - total:${player.attackTimes} times, ${player.totalDamage} damages`,
                     };
-                    this.sendOutput(this.clients.get(pName));
+                    this.sendOutput(player.socket);
                     if (this.monster.getData().hp <= 0) {
                         this.isPlaying = false;
                         this.monster.monsterDie(pName).catch((err) => {
@@ -122,6 +121,7 @@ class Game {
                         player.updateFeather().catch((err) => {
                             console.log("Error!Server can't updateFeather\n" + err);
                         });
+                        this.isPlaying = false;
                         clearInterval(loop);
                         res(pName);
                         break;
@@ -131,7 +131,6 @@ class Game {
         }).then((ksName) => {
             this.playingPlayers.forEach((pName) => {
                 const player = this.players.get(pName);
-                const socket = this.clients.get(pName);
                 this.output = {
                     type: "msg",
                     body: `Phoenix had been killed, Attack:${player.attackTimes} times - ${player.totalDamage} damages`,
@@ -139,12 +138,22 @@ class Game {
                 if (pName == ksName) {
                     this.output.body += `, Get "Feather"`;
                 }
-                this.sendOutput(socket);
+                else {
+                    this.output.type = "req";
+                    this.output.body += ", Wait for next Phoenix?[y/n]";
+                }
+                player.initAttackLog();
+                this.sendOutput(player.socket);
             });
             this.playingPlayers = [];
             console.log("Phoenix respawn at 15s");
             setTimeout(() => {
-                this.monster.respawn().catch((err) => {
+                this.monster
+                    .respawn()
+                    .then(() => {
+                    this.canPlayed() && this.play();
+                })
+                    .catch((err) => {
                     console.log("Error!Server can't respawn monster\n" + err);
                 });
             }, 1000 * 15);
@@ -162,10 +171,9 @@ class Game {
         socket.write(JSON.stringify(this.output));
     }
     logOut(port) {
-        const clientsCopy = new Map(this.clients);
-        clientsCopy.forEach((client, key) => {
-            if (port == client.remotePort) {
-                this.clients.delete(key);
+        const playerCopy = new Map(this.players);
+        playerCopy.forEach((player, key) => {
+            if (port == player.socket.remotePort) {
                 this.players.delete(key);
                 const index = this.playingPlayers.indexOf(key);
                 index > -1 && this.playingPlayers.splice(index, 1);

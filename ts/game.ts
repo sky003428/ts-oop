@@ -11,12 +11,12 @@ export interface GameLog {
 export interface R {
     type: string;
     body: string;
-    isGameOver?: boolean;
+    name?: string;
 }
 
 export class Game {
     public monster: Monster = new Monster("鳳凰");
-    public clients = new Map<string, Net.Socket>();
+    // public clients = new Map<string, Net.Socket>();
     public players = new Map<string, Player>();
     public playingPlayers: string[] = [];
     public isPlaying: boolean = false;
@@ -76,8 +76,7 @@ export class Game {
             this.output.body += `Phoenix hp:${this.monster.getData().hp}`;
         }
 
-        this.clients.set(loginName, socket);
-        this.players.set(name, new Player(id, name, feather, title));
+        this.players.set(name, new Player(id, name, feather, title, socket));
         return this.log;
     }
 
@@ -125,14 +124,15 @@ export class Game {
                 for (let i = 0; i < this.playingPlayers.length; ++i) {
                     const pName = this.playingPlayers[i];
                     const player = this.players.get(pName);
-                    const dmg: number = player.attack();
+                    let dmg: number = player.attack(this.monster.getData().hp);
 
                     this.monster.beAttack(dmg);
+
                     this.output = {
                         type: "msg",
                         body: `Player ${pName}: Attack ${dmg} damages - total:${player.attackTimes} times, ${player.totalDamage} damages`,
                     };
-                    this.sendOutput(this.clients.get(pName));
+                    this.sendOutput(player.socket);
                     if (this.monster.getData().hp <= 0) {
                         this.isPlaying = false;
                         this.monster.monsterDie(pName).catch((err) => {
@@ -142,6 +142,7 @@ export class Game {
                             console.log("Error!Server can't updateFeather\n" + err);
                         });
 
+                        this.isPlaying = false;
                         clearInterval(loop);
                         res(pName);
                         break;
@@ -151,24 +152,33 @@ export class Game {
         }).then((ksName: string) => {
             this.playingPlayers.forEach((pName) => {
                 const player = this.players.get(pName);
-                const socket = this.clients.get(pName);
 
                 this.output = {
                     type: "msg",
                     body: `Phoenix had been killed, Attack:${player.attackTimes} times - ${player.totalDamage} damages`,
                 };
+
                 if (pName == ksName) {
                     this.output.body += `, Get "Feather"`;
+                } else {
+                    this.output.type = "req";
+                    this.output.body += ", Wait for next Phoenix?[y/n]";
                 }
-                this.sendOutput(socket);
+                player.initAttackLog();
+                this.sendOutput(player.socket);
             });
             this.playingPlayers = [];
             console.log("Phoenix respawn at 15s");
 
             setTimeout(() => {
-                this.monster.respawn().catch((err) => {
-                    console.log("Error!Server can't respawn monster\n" + err);
-                });
+                this.monster
+                    .respawn()
+                    .then(() => {
+                        this.canPlayed() && this.play();
+                    })
+                    .catch((err) => {
+                        console.log("Error!Server can't respawn monster\n" + err);
+                    });
             }, 1000 * 15);
         });
     }
@@ -186,10 +196,9 @@ export class Game {
     }
 
     public logOut(port: number) {
-        const clientsCopy = new Map<string, Net.Socket>(this.clients);
-        clientsCopy.forEach((client: Net.Socket, key: string) => {
-            if (port == client.remotePort) {
-                this.clients.delete(key);
+        const playerCopy = new Map<string, Player>(this.players);
+        playerCopy.forEach((player: Player, key: string) => {
+            if (port == player.socket.remotePort) {
                 this.players.delete(key);
                 const index: number = this.playingPlayers.indexOf(key);
                 index > -1 && this.playingPlayers.splice(index, 1);
