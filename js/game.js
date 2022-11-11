@@ -98,66 +98,117 @@ class Game {
         }
         this.playingPlayers.push(name);
     }
-    play() {
+    play(name) {
         this.isPlaying = true;
-        // while (this.monster.getData().hp > 0) {
-        new Promise((res) => {
-            const loop = setInterval(() => {
-                for (let i = 0; i < this.playingPlayers.length; ++i) {
-                    const pName = this.playingPlayers[i];
-                    const player = this.players.get(pName);
-                    let dmg = player.attack(this.monster.getData().hp);
-                    this.monster.beAttack(dmg);
-                    this.output = {
-                        type: "msg",
-                        body: `Player ${pName}: Attack ${dmg} damages - total:${player.attackTimes} times, ${player.totalDamage} damages`,
-                    };
-                    this.sendOutput(player.socket);
-                    if (this.monster.getData().hp <= 0) {
-                        this.isPlaying = false;
-                        this.monster.monsterDie(pName).catch((err) => {
-                            console.log(err);
-                        });
-                        player.updateFeather().catch((err) => {
-                            console.log("Error!Server can't updateFeather\n" + err);
-                        });
-                        this.isPlaying = false;
-                        clearInterval(loop);
-                        res(pName);
-                        break;
-                    }
-                }
-            }, 0);
-        }).then((ksName) => {
-            this.playingPlayers.forEach((pName) => {
-                const player = this.players.get(pName);
-                this.output = {
-                    type: "msg",
-                    body: `Phoenix had been killed, Attack:${player.attackTimes} times - ${player.totalDamage} damages`,
-                };
-                if (pName == ksName) {
+        const player = this.players.get(name);
+        let dmg = player.attack(this.monster.getData().hp);
+        this.monster.beAttack(dmg);
+        if (this.monster.getData().hp > 0) {
+            this.output = {
+                type: "fightLog",
+                body: `Player ${name}: Attack ${dmg} damages - total:${player.attackTimes} times, ${player.totalDamage} damages`,
+                isGameOver: false,
+            };
+            this.sendOutput(player.socket);
+        }
+        else {
+            this.isPlaying = false;
+            this.output.isGameOver = true;
+            this.monster.monsterDie(name).catch((err) => {
+                console.log(err);
+            });
+            player.updateFeather().catch((err) => {
+                console.log("Error!Server can't updateFeather\n" + err);
+            });
+            this.playingPlayers.forEach((playingName) => {
+                const player = this.players.get(playingName);
+                this.output.body = `Phoenix had been killed, Attack:${player.attackTimes} times - ${player.totalDamage} damages`;
+                if (player.name == this.monster.getData().ks) {
                     this.output.body += `, Get "Feather"`;
                 }
-                else {
-                    this.output.type = "req";
-                    this.output.body += ", Wait for next Phoenix?[y/n]";
-                }
-                player.initAttackLog();
-                this.sendOutput(player.socket);
             });
-            this.playingPlayers = [];
-            console.log("Phoenix respawn at 15s");
-            setTimeout(() => {
-                this.monster
-                    .respawn()
-                    .then(() => {
-                    this.canPlayed() && this.play();
-                })
-                    .catch((err) => {
-                    console.log("Error!Server can't respawn monster\n" + err);
-                });
-            }, 1000 * 15);
-        });
+        }
+        // while (this.monster.getData().hp > 0) {
+        //     for (let i = 0; i < this.playingPlayers.length; ++i) {
+        //         const pName = this.playingPlayers[i];
+        //         const player = this.players.get(pName);
+        //         let dmg: number = player.attack(this.monster.getData().hp);
+        //         this.monster.beAttack(dmg);
+        //         this.output = {
+        //             type: "msg",
+        //             body: `Player ${pName}: Attack ${dmg} damages - total:${player.attackTimes} times, ${player.totalDamage} damages`,
+        //         };
+        //         this.sendOutput(player.socket);
+        //         if (this.monster.getData().hp <= 0) {
+        //             this.isPlaying = false;
+        //             this.monster.monsterDie(pName).catch((err) => {
+        //                 console.log(err);
+        //             });
+        //             player.updateFeather().catch((err) => {
+        //                 console.log("Error!Server can't updateFeather\n" + err);
+        //             });
+        //             this.isPlaying = false;
+        //             // res(pName);
+        //             break;
+        //         }
+        //     }
+        // }
+        // new Promise<string>((res) => {
+        //     const loop = setInterval(() => {
+        //         for (let i = 0; i < this.playingPlayers.length; ++i) {
+        //             const pName = this.playingPlayers[i];
+        //             const player = this.players.get(pName);
+        //             let dmg: number = player.attack(this.monster.getData().hp);
+        //             this.monster.beAttack(dmg);
+        //             this.output = {
+        //                 type: "msg",
+        //                 body: `Player ${pName}: Attack ${dmg} damages - total:${player.attackTimes} times, ${player.totalDamage} damages`,
+        //             };
+        //             this.sendOutput(player.socket);
+        //             if (this.monster.getData().hp <= 0) {
+        //                 this.isPlaying = false;
+        //                 this.monster.monsterDie(pName).catch((err) => {
+        //                     console.log(err);
+        //                 });
+        //                 player.updateFeather().catch((err) => {
+        //                     console.log("Error!Server can't updateFeather\n" + err);
+        //                 });
+        //                 this.isPlaying = false;
+        //                 clearInterval(loop);
+        //                 res(pName);
+        //                 break;
+        //             }
+        //         }
+        //     }, 0);
+        // }).then((ksName: string) => {
+        //     this.playingPlayers.forEach((pName) => {
+        //         const player = this.players.get(pName);
+        //         this.output = {
+        //             type: "msg",
+        //             body: `Phoenix had been killed, Attack:${player.attackTimes} times - ${player.totalDamage} damages`,
+        //         };
+        //         if (pName == ksName) {
+        //             this.output.body += `, Get "Feather"`;
+        //         } else {
+        //             this.output.type = "req";
+        //             this.output.body += ", Wait for next Phoenix?[y/n]";
+        //         }
+        //         player.initAttackLog();
+        //         this.sendOutput(player.socket);
+        //     });
+        //     this.playingPlayers = [];
+        //     console.log("Phoenix respawn at 15s");
+        //     setTimeout(() => {
+        //         this.monster
+        //             .respawn()
+        //             .then(() => {
+        //                 this.canPlayed() && this.play();
+        //             })
+        //             .catch((err) => {
+        //                 console.log("Error!Server can't respawn monster\n" + err);
+        //             });
+        //     }, 1000 * 15);
+        // });
     }
     canPlayed() {
         if (this.playingPlayers.length > 0 && this.monster.getData().hp > 0 && !this.isPlaying) {

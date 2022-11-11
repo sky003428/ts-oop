@@ -76,7 +76,7 @@ export class Player {
         });
     }
 
-    public isGameOver(): boolean {
+    public isOver(): boolean {
         return this.feather || this.title.includes("勇者");
     }
 

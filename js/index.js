@@ -32,11 +32,10 @@ const server = net_1.default.createServer((socket) => {
                     return;
                 }
                 game.joinPlay(input.body, socket);
-                game.canPlayed() && game.play();
+                game.canPlayed() && game.play(input.body);
             })();
         }
         if (input.type == "res") {
-            // input.name
             const pattarn = /^Y/im;
             const answer = pattarn.test(input.body);
             if (!answer) {
@@ -44,7 +43,10 @@ const server = net_1.default.createServer((socket) => {
                 return;
             }
             game.playingPlayers.push(input.name);
-            game.canPlayed() && game.play();
+            game.canPlayed() && game.play(input.name);
+        }
+        if (input.type == "fight") {
+            game.play(input.body);
         }
     });
     socket.on("error", () => {

@@ -33,12 +33,10 @@ const server: Net.Server = Net.createServer((socket: Net.Socket): void => {
                 if (log.err) {
                     return;
                 }
-                game.joinPlay(input.body, socket);
-                game.canPlayed() && game.play();
+                game.play(input.body, socket);
             })();
         }
         if (input.type == "res") {
-            // input.name
             const pattarn = /^Y/im;
             const answer: boolean = pattarn.test(input.body);
 
@@ -47,8 +45,10 @@ const server: Net.Server = Net.createServer((socket: Net.Socket): void => {
                 return;
             }
 
-            game.playingPlayers.push(input.name);
-            game.canPlayed() && game.play();
+            game.play(input.name, socket);
+        }
+        if (input.type == "fight") {
+            game.play(input.body, socket);
         }
     });
 
