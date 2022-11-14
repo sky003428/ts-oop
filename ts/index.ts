@@ -47,7 +47,8 @@ let client: Net.Socket;
             return;
         }
         if (d.type == "fightLog") {
-            console.log(d.body);
+            console.log(`${d.type} : ${d.body}`);
+
             if (!d.isGameOver) {
                 client.write(JSON.stringify({ type: "fight", body: name }));
                 return;

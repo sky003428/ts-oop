@@ -33,13 +33,11 @@ const rl = ReadLine.createInterface({
     output: process.stdout,
 });
 let client;
-let name;
 (async () => {
-    const input = await rl.question("Enter Your Name:");
+    const name = await rl.question("Enter Your Name:");
     client = net_1.default.createConnection({ host: "127.0.0.1", port: 3000 }, () => {
         client.setNoDelay(true);
-        const req = { type: "login", body: input };
-        name = input;
+        const req = { type: "login", body: name };
         client.write(JSON.stringify(req));
     });
     client.on("connect", function () {
@@ -65,7 +63,7 @@ let name;
             return;
         }
         if (d.type == "fightLog") {
-            console.log(d.body);
+            console.log(`${d.type} : ${d.body}`);
             if (!d.isGameOver) {
                 client.write(JSON.stringify({ type: "fight", body: name }));
                 return;
