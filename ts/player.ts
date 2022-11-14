@@ -11,6 +11,7 @@ export interface P {
 export class Player {
     public totalDamage: number = 0;
     public attackTimes: number = 0;
+    private maxDamage: number = 5;
 
     constructor(
         public readonly id: number,
@@ -54,7 +55,7 @@ export class Player {
     }
 
     public attack(monsterHp: number): number {
-        let dmg: number = Math.ceil(Math.random() * 10) + 10;
+        let dmg: number = Math.ceil(Math.random() * this.maxDamage);
 
         if (monsterHp - dmg < 0) {
             dmg = monsterHp;

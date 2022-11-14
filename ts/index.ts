@@ -15,7 +15,6 @@ const game: Game = new Game();
 const server: Net.Server = Net.createServer((socket: Net.Socket): void => {
     socket.setNoDelay(true);
     console.log("client connected", socket.remotePort, "id");
-    // todo: 紀錄clients,檢查重複登入, 踢掉前一位重複登入
 
     socket.on("data", (data: Buffer): void => {
         console.log(data.toString());
@@ -45,7 +44,11 @@ const server: Net.Server = Net.createServer((socket: Net.Socket): void => {
                 return;
             }
 
-            game.play(input.name, socket);
+            if (game.monster.getData().hp > 0) {
+                game.play(input.name, socket);
+            } else {
+                game.playingPlayers.set(input.name, game.players.get(input.name));
+            }
         }
         if (input.type == "fight") {
             game.play(input.body, socket);

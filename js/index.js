@@ -31,8 +31,7 @@ const server = net_1.default.createServer((socket) => {
                 if (log.err) {
                     return;
                 }
-                game.joinPlay(input.body, socket);
-                game.canPlayed() && game.play(input.body);
+                game.play(input.body, socket);
             })();
         }
         if (input.type == "res") {
@@ -42,11 +41,15 @@ const server = net_1.default.createServer((socket) => {
                 socket.end(JSON.stringify({ type: "msg", body: "bye" }));
                 return;
             }
-            game.playingPlayers.push(input.name);
-            game.canPlayed() && game.play(input.name);
+            if (game.monster.getData().hp > 0) {
+                game.play(input.name, socket);
+            }
+            else {
+                game.playingPlayers.set(input.name, game.players.get(input.name));
+            }
         }
         if (input.type == "fight") {
-            game.play(input.body);
+            game.play(input.body, socket);
         }
     });
     socket.on("error", () => {

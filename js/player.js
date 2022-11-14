@@ -14,6 +14,7 @@ class Player {
         this.socket = socket;
         this.totalDamage = 0;
         this.attackTimes = 0;
+        this.maxDamage = 5;
         this.id = id;
         this.name = name;
         this.feather = feather;
@@ -47,7 +48,7 @@ class Player {
         });
     }
     attack(monsterHp) {
-        let dmg = Math.ceil(Math.random() * 10) + 10;
+        let dmg = Math.ceil(Math.random() * this.maxDamage);
         if (monsterHp - dmg < 0) {
             dmg = monsterHp;
         }
@@ -66,7 +67,7 @@ class Player {
             });
         });
     }
-    isGameOver() {
+    isOver() {
         return this.feather || this.title.includes("勇者");
     }
     initAttackLog() {

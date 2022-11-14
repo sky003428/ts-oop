@@ -17,10 +17,9 @@ export interface R {
 
 export class Game {
     public monster: Monster = new Monster("鳳凰");
-    // public clients = new Map<string, Net.Socket>();
     public players = new Map<string, Player>();
-    public playingPlayers: Player[] = [];
-    // public isPlaying: boolean = false;
+    public playingPlayers = new Map<string, Player>();
+    private respawnTime: number = 25;
     private output: R;
     private log: GameLog = { err: false, msg: "" };
 
@@ -104,35 +103,28 @@ export class Game {
     public play(name: string, socket: Net.Socket) {
         const player = this.players.get(name);
 
-        if (this.monster.getData().hp < 0) {
-            this.sendOutput(socket, { type: "msg", body: "Monster was already died!" });
-            return;
-        }
-        if (this.players.get(name).isOver()) {
+        if (player.isOver()) {
             this.sendOutput(socket, { type: "msg", body: "You've already kill monster!" });
             return;
         }
-
-        const ind = this.playingPlayers.findIndex((p) => p.name == name);
-        if (ind > -1) {
-            this.playingPlayers.splice(ind, 1);
+        if (this.monster.getData().hp <= 0) {
+            this.sendOutput(socket, { type: "msg", body: "Monster was already died!" });
+            return;
         }
-        this.playingPlayers.push(player);
+
+        this.playingPlayers.set(name, player);
 
         let dmg: number = player.attack(this.monster.getData().hp);
         this.monster.beAttack(dmg);
 
-        if (this.monster.getData().hp > 0) {
-            const output: R = {
-                type: "fightLog",
-                body: `Player ${name}: Attack ${dmg} damages - total:${player.attackTimes} times, ${player.totalDamage} damages`,
-                isGameOver: false,
-            };
-            this.sendOutput(player.socket, output);
-        } else {
-            // this.isPlaying = false;
-            const output: R = { type: "fightLog", body: "", isGameOver: true };
+        const output: R = {
+            type: "fightLog",
+            body: `Player ${name}: Attack ${dmg} damages - total:${player.attackTimes} times, ${player.totalDamage} damages`,
+            isGameOver: this.monster.getData().hp <= 0,
+        };
+        this.sendOutput(player.socket, output);
 
+        if (this.monster.getData().hp <= 0) {
             this.monster.monsterDie(name).catch((err) => {
                 console.log(err);
             });
@@ -140,120 +132,39 @@ export class Game {
                 console.log("Error!Server can't updateFeather\n" + err);
             });
 
-            this.playingPlayers.forEach((player) => {
-                output.body = `Phoenix had been killed, Attack:${player.attackTimes} times - ${player.totalDamage} damages`;
-                if (player.name == this.monster.getData().ks) {
-                    output.body += `, Get "Feather"`;
+            const output = {
+                type: "fightLog",
+                body: "",
+                isGameOver: true,
+            };
+
+            this.playingPlayers.forEach((p) => {
+                if (p.name == this.monster.getData().ks) {
+                    output.body = `Phoenix had been killed, Attack:${player.attackTimes} times - ${player.totalDamage} damages, Get "Feather"`;
                 } else {
                     output.type = "req";
-                    output.body += ", Wait for next Phoenix? [y/n]";
+                    output.body += `Phoenix had been killed, Attack:${player.attackTimes} times - ${player.totalDamage} damages, Wait for next Phoenix? [y/n]`;
                 }
-                this.sendOutput(player.socket, output);
+                this.sendOutput(p.socket, output);
+                p.initAttackLog();
             });
+            this.playingPlayers.clear();
+
+            console.log(`Phoenix respawn in ${this.respawnTime}s`);
+            setTimeout(() => {
+                this.monster
+                    .respawn()
+                    .then(() => {
+                        this.playingPlayers.forEach((p) => {
+                            this.play(p.name, p.socket);
+                        });
+                    })
+                    .catch((err) => {
+                        console.log("Error!Server can't respawn monster\n" + err);
+                    });
+            }, 1000 * this.respawnTime);
         }
-
-        // while (this.monster.getData().hp > 0) {
-        //     for (let i = 0; i < this.playingPlayers.length; ++i) {
-
-        //         const pName = this.playingPlayers[i];
-        //         const player = this.players.get(pName);
-        //         let dmg: number = player.attack(this.monster.getData().hp);
-
-        //         this.monster.beAttack(dmg);
-
-        //         this.output = {
-        //             type: "msg",
-        //             body: `Player ${pName}: Attack ${dmg} damages - total:${player.attackTimes} times, ${player.totalDamage} damages`,
-        //         };
-        //         this.sendOutput(player.socket);
-        //         if (this.monster.getData().hp <= 0) {
-        //             this.isPlaying = false;
-        //             this.monster.monsterDie(pName).catch((err) => {
-        //                 console.log(err);
-        //             });
-        //             player.updateFeather().catch((err) => {
-        //                 console.log("Error!Server can't updateFeather\n" + err);
-        //             });
-
-        //             this.isPlaying = false;
-
-        //             // res(pName);
-        //             break;
-        //         }
-        //     }
-        // }
-
-        // new Promise<string>((res) => {
-        //     const loop = setInterval(() => {
-        //         for (let i = 0; i < this.playingPlayers.length; ++i) {
-        //             const pName = this.playingPlayers[i];
-        //             const player = this.players.get(pName);
-        //             let dmg: number = player.attack(this.monster.getData().hp);
-
-        //             this.monster.beAttack(dmg);
-
-        //             this.output = {
-        //                 type: "msg",
-        //                 body: `Player ${pName}: Attack ${dmg} damages - total:${player.attackTimes} times, ${player.totalDamage} damages`,
-        //             };
-        //             this.sendOutput(player.socket);
-        //             if (this.monster.getData().hp <= 0) {
-        //                 this.isPlaying = false;
-        //                 this.monster.monsterDie(pName).catch((err) => {
-        //                     console.log(err);
-        //                 });
-        //                 player.updateFeather().catch((err) => {
-        //                     console.log("Error!Server can't updateFeather\n" + err);
-        //                 });
-
-        //                 this.isPlaying = false;
-        //                 clearInterval(loop);
-        //                 res(pName);
-        //                 break;
-        //             }
-        //         }
-        //     }, 0);
-        // }).then((ksName: string) => {
-        //     this.playingPlayers.forEach((pName) => {
-        //         const player = this.players.get(pName);
-
-        //         this.output = {
-        //             type: "msg",
-        //             body: `Phoenix had been killed, Attack:${player.attackTimes} times - ${player.totalDamage} damages`,
-        //         };
-
-        //         if (pName == ksName) {
-        //             this.output.body += `, Get "Feather"`;
-        //         } else {
-        //             this.output.type = "req";
-        //             this.output.body += ", Wait for next Phoenix?[y/n]";
-        //         }
-        //         player.initAttackLog();
-        //         this.sendOutput(player.socket);
-        //     });
-        //     this.playingPlayers = [];
-        //     console.log("Phoenix respawn at 15s");
-
-        //     setTimeout(() => {
-        //         this.monster
-        //             .respawn()
-        //             .then(() => {
-        //                 this.canPlayed() && this.play();
-        //             })
-        //             .catch((err) => {
-        //                 console.log("Error!Server can't respawn monster\n" + err);
-        //             });
-        //     }, 1000 * 15);
-        // });
     }
-
-    // public canPlayed(): boolean {
-    //     if (this.playingPlayers.length > 0 && this.monster.getData().hp > 0) {
-    //         return true;
-    //     } else {
-    //         return false;
-    //     }
-    // }
 
     public sendOutput(socket: Net.Socket, op: R = this.output): void {
         socket.write(JSON.stringify(op));
@@ -261,10 +172,10 @@ export class Game {
 
     public logOut(port: number) {
         const playerCopy = new Map<string, Player>(this.players);
-        this.playingPlayers = this.playingPlayers.filter((p) => p.socket.remotePort != port);
         playerCopy.forEach((player: Player, key: string) => {
             if (port == player.socket.remotePort) {
                 this.players.delete(key);
+                this.playingPlayers.delete(key);
             }
         });
     }
