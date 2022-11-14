@@ -26,6 +26,13 @@ const server: Net.Server = Net.createServer((socket: Net.Socket): void => {
 
         const input = log.data;
 
+        if (input.type == "fetch") {
+            // const output:R ={type:"post",body:game.monster.getData()}
+            switch(input.body){
+                case "monster"
+            }
+            return;
+        }
         if (input.type == "login") {
             (async () => {
                 log = await game.login(input.body, socket);

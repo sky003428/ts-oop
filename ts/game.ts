@@ -1,4 +1,4 @@
-import { Monster } from "./monster";
+import { Monster,M } from "./monster";
 import Net from "net";
 import { Player, P } from "./player";
 
@@ -10,7 +10,7 @@ export interface GameLog {
 
 export interface R {
     type: string;
-    body: string;
+    body: string | M;
     name?: string;
     isGameOver?: boolean;
 }

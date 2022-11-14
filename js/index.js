@@ -17,7 +17,6 @@ const game = new game_1.Game();
 const server = net_1.default.createServer((socket) => {
     socket.setNoDelay(true);
     console.log("client connected", socket.remotePort, "id");
-    // todo: 紀錄clients,檢查重複登入, 踢掉前一位重複登入
     socket.on("data", (data) => {
         console.log(data.toString());
         let log = game.isValid(data.toString(), socket);
