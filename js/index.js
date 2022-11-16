@@ -32,43 +32,75 @@ const rl = ReadLine.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
+var ServerList;
+(function (ServerList) {
+    ServerList["master"] = "1";
+    ServerList["slave"] = "2";
+})(ServerList || (ServerList = {}));
 let client;
+let atkTimer;
+let attacking = false;
 (async () => {
     const name = await rl.question("Enter Your Name:");
-    client = net_1.default.createConnection({ host: "127.0.0.1", port: 3000 }, () => {
+    const portSelect = await rl.question("Select Server: \n1. Master\n2. Slave\n");
+    let port;
+    switch (portSelect) {
+        case ServerList.master:
+            port = 3000;
+            break;
+        case ServerList.slave:
+            port = 3001;
+            break;
+        default:
+            process.exit(1);
+    }
+    client = net_1.default.createConnection({ host: "127.0.0.1", port }, () => {
         client.setNoDelay(true);
-        const req = { type: "login", body: name };
+        const req = { type: "login", body: "", name };
         client.write(JSON.stringify(req));
     });
     client.on("connect", function () {
         console.log("已經與伺服器端建立連接");
     });
-    client.on("data", function (data) {
-        let d;
+    client.on("data", function (dataBuffer) {
+        const dataArr = dataBuffer.toString().replace(/}{/g, "}}{{").split(/}{/g);
+        let dArr;
         try {
-            d = JSON.parse(data.toString());
+            dArr = dataArr.map((d) => JSON.parse(d));
         }
         catch (err) {
-            console.log(data.toString(), err);
+            console.log(dataArr, err);
             return;
         }
-        if (d.type == "msg" || d.type == "err") {
-            console.log(`${d.type}: ${d.body}`);
-            return;
-        }
-        if (d.type == "req") {
-            rl.question(`${d.body}`).then((input) => {
-                client.write(JSON.stringify({ type: "res", body: input, name }));
-            });
-            return;
-        }
-        if (d.type == "fightLog") {
-            console.log(`${d.type} : ${d.body}`);
-            if (!d.isGameOver) {
-                client.write(JSON.stringify({ type: "fight", body: name }));
+        dArr.forEach((d) => {
+            if (d.type == "msg" || d.type == "err") {
+                console.log(`${d.type}: ${d.body}`);
                 return;
             }
-        }
+            if (d.type == "req") {
+                if (d.isGameOver) {
+                    clearInterval(atkTimer);
+                    attacking = false;
+                }
+                rl.question(`${d.type} : ${d.body}`).then((input) => {
+                    client.write(JSON.stringify({ type: "res", body: input, name }));
+                });
+                return;
+            }
+            if (d.type == "fightLog") {
+                console.log(`${d.type} : ${d.body},${d.isGameOver}`);
+                if (d.isGameOver) {
+                    clearInterval(atkTimer);
+                    attacking = false;
+                }
+                if (!d.isGameOver && !attacking) {
+                    atkTimer = setInterval(() => {
+                        attacking = true;
+                        client.write(JSON.stringify({ type: "fight", body: "", name }));
+                    }, 10);
+                }
+            }
+        });
     });
     client.on("close", function (data) {
         console.log("Connect close");
