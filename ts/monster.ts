@@ -1,4 +1,6 @@
+import Net from "net";
 import Db from "./db";
+import { R } from "./game";
 
 export interface M {
     id: number;
@@ -57,10 +59,17 @@ export class Monster {
         this.data.hp -= dmg;
     }
 
+    public sync(slaverServer: Map<string, Net.Socket>): void {
+        slaverServer.forEach((s, name) => {
+            const op: R = { type: "sync", target: "monster", body: JSON.stringify(this.data), name };
+            s.write(JSON.stringify(op));
+        });
+    }
+
     public monsterDie(playerName: string): Promise<void> {
         console.log("Phoenix was killed by:", playerName);
-
         this.data.ks = playerName;
+
         return new Promise((res, rej) => {
             Db.query(
                 "UPDATE monster SET hp = ?, ks = ? WHERE id = ?;",

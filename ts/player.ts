@@ -11,7 +11,7 @@ export interface P {
 export class Player {
     public totalDamage: number = 0;
     public attackTimes: number = 0;
-    private maxDamage: number = 5;
+    private maxDamage: number = 10;
 
     constructor(
         public readonly id: number,

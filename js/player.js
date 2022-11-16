@@ -14,7 +14,7 @@ class Player {
         this.socket = socket;
         this.totalDamage = 0;
         this.attackTimes = 0;
-        this.maxDamage = 5;
+        this.maxDamage = 10;
         this.id = id;
         this.name = name;
         this.feather = feather;

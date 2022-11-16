@@ -1,4 +1,4 @@
-import { Monster,M } from "./monster";
+import { Monster, M } from "./monster";
 import Net from "net";
 import { Player, P } from "./player";
 
@@ -10,15 +10,17 @@ export interface GameLog {
 
 export interface R {
     type: string;
-    body: string | M;
-    name?: string;
+    body: string;
+    name: string;
     isGameOver?: boolean;
+    target?: string;
 }
 
 export class Game {
     public monster: Monster = new Monster("鳳凰");
     public players = new Map<string, Player>();
     public playingPlayers = new Map<string, Player>();
+    public slaverServer = new Map<string, Net.Socket>();
     private respawnTime: number = 25;
     private output: R;
     private log: GameLog = { err: false, msg: "" };
@@ -33,17 +35,17 @@ export class Game {
             return this.log;
         }
 
-        // 判斷有沒有key type,body 型別
-        if (!(typeof data.type == "string") || !(typeof data.body == "string")) {
-            this.output = { type: "err", body: "Incorrect resquest" };
-            this.sendOutput(socket);
+        // 判斷有沒有key type,body,name 型別
+        if (!(typeof data.type == "string") || !(typeof data.body == "string") || !(typeof data.name == "string")) {
+            const output = { type: "err", body: "Incorrect resquest", name: data.name };
+            this.sendOutput(socket, output);
             return { err: true, msg: "Incorrect resquest" };
         }
 
         return { ...this.log, data };
     }
 
-    public async login(loginName: string, socket: Net.Socket): Promise<GameLog> {
+    public async login(loginName: string, socket: Net.Socket, sync?: boolean): Promise<GameLog> {
         this.log = { err: false, msg: "" };
         let playerData: P;
 
@@ -52,7 +54,7 @@ export class Game {
         } catch (err) {
             this.log.err = true;
             this.log.msg = "ERROR! Server can't get player data\n" + err;
-            this.output = { type: "err", body: "ERROR! Server can't get player data" };
+            this.output = { type: "err", body: "ERROR! Server can't get player data", name: loginName };
             this.sendOutput(socket);
             return this.log;
         }
@@ -63,7 +65,7 @@ export class Game {
             } catch (err) {
                 this.log.err = true;
                 this.log.msg = "ERROR! Server can't create player\n" + err;
-                this.output = { type: "err", body: "ERROR! Server can't create player" };
+                this.output = { type: "err", body: "ERROR! Server can't create player", name: loginName };
                 this.sendOutput(socket);
                 return this.log;
             }
@@ -71,12 +73,13 @@ export class Game {
 
         const { id, name, feather, title } = playerData;
 
-        this.output = { type: "msg", body: `player${id} - ${name} has logined, Title:${title}` };
+        this.output = { type: "msg", body: `player${id} - ${name} has logined, Title:${title}`, name: loginName };
         if (this.monster.getData().id) {
             this.output.body += `Phoenix hp:${this.monster.getData().hp}`;
         }
 
         this.players.set(name, new Player(id, name, feather, title, socket));
+        this.sendOutput(socket);
         return this.log;
     }
 
@@ -101,17 +104,15 @@ export class Game {
     }
 
     public play(name: string, socket: Net.Socket) {
-        const player = this.players.get(name);
-
+        const player: Player = this.players.get(name);
         if (player.isOver()) {
-            this.sendOutput(socket, { type: "msg", body: "You've already kill monster!" });
+            this.sendOutput(socket, { type: "fightLog", body: "You've already kill monster!", name, isGameOver: true });
             return;
         }
         if (this.monster.getData().hp <= 0) {
-            this.sendOutput(socket, { type: "msg", body: "Monster was already died!" });
+            this.sendOutput(socket, { type: "fightLog", body: "Monster was already died!", name, isGameOver: true });
             return;
         }
-
         this.playingPlayers.set(name, player);
 
         let dmg: number = player.attack(this.monster.getData().hp);
@@ -121,30 +122,38 @@ export class Game {
             type: "fightLog",
             body: `Player ${name}: Attack ${dmg} damages - total:${player.attackTimes} times, ${player.totalDamage} damages`,
             isGameOver: this.monster.getData().hp <= 0,
+            name,
         };
         this.sendOutput(player.socket, output);
 
+        // 怪物死亡
         if (this.monster.getData().hp <= 0) {
             this.monster.monsterDie(name).catch((err) => {
                 console.log(err);
             });
+            this.monster.sync(this.slaverServer);
+
             player.updateFeather().catch((err) => {
                 console.log("Error!Server can't updateFeather\n" + err);
             });
 
-            const output = {
-                type: "fightLog",
-                body: "",
-                isGameOver: true,
-            };
-
             this.playingPlayers.forEach((p) => {
+                const output: R = {
+                    type: "fightLog",
+                    body: "",
+                    isGameOver: true,
+                    name: "",
+                };
+
+                output.name = p.name;
+
                 if (p.name == this.monster.getData().ks) {
-                    output.body = `Phoenix had been killed, Attack:${player.attackTimes} times - ${player.totalDamage} damages, Get "Feather"`;
+                    output.body = `Phoenix had been killed, Attack:${p.attackTimes} times - ${p.totalDamage} damages, Get "Feather"`;
                 } else {
                     output.type = "req";
-                    output.body += `Phoenix had been killed, Attack:${player.attackTimes} times - ${player.totalDamage} damages, Wait for next Phoenix? [y/n]`;
+                    output.body += `Phoenix had been killed, Attack:${p.attackTimes} times - ${p.totalDamage} damages, Wait for next Phoenix? [y/n]`;
                 }
+                console.log(p.name, "回傳訊息");
                 this.sendOutput(p.socket, output);
                 p.initAttackLog();
             });
@@ -155,6 +164,7 @@ export class Game {
                 this.monster
                     .respawn()
                     .then(() => {
+                        this.monster.sync(this.slaverServer);
                         this.playingPlayers.forEach((p) => {
                             this.play(p.name, p.socket);
                         });
@@ -170,7 +180,7 @@ export class Game {
         socket.write(JSON.stringify(op));
     }
 
-    public logOut(port: number) {
+    public logOut(port: number): void {
         const playerCopy = new Map<string, Player>(this.players);
         playerCopy.forEach((player: Player, key: string) => {
             if (port == player.socket.remotePort) {
@@ -178,5 +188,10 @@ export class Game {
                 this.playingPlayers.delete(key);
             }
         });
+    }
+
+    public logOutByName(name: string): void {
+        this.players.delete(name);
+        this.playingPlayers.delete(name);
     }
 }

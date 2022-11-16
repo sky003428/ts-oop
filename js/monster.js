@@ -41,6 +41,12 @@ class Monster {
     beAttack(dmg) {
         this.data.hp -= dmg;
     }
+    sync(slaverServer) {
+        slaverServer.forEach((s, name) => {
+            const op = { type: "sync", target: "monster", body: JSON.stringify(this.data), name };
+            s.write(JSON.stringify(op));
+        });
+    }
     monsterDie(playerName) {
         console.log("Phoenix was killed by:", playerName);
         this.data.ks = playerName;
