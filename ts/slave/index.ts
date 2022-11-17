@@ -3,12 +3,12 @@ import Net from "net";
 import { Game, GameLog, R } from "./game";
 import { Monster } from "./monster";
 
-const { HOST, PORT } = process.env;
+const { HOST, PORT2 } = process.env;
 const game: Game = new Game();
 
 const master: Net.Socket = Net.createConnection({ host: HOST, port: 3000 }, () => {
     console.log("Master connected", master.remotePort);
-    Monster.fetch(master, PORT);
+    Monster.fetch(master, PORT2);
 
     master.on("data", (dataBuffer: Buffer) => {
         const dataArr: string[] = dataBuffer.toString().replace(/}{/g, "}}{{").split(/}{/g);
@@ -83,6 +83,6 @@ const server: Net.Server = Net.createServer((socket: Net.Socket): void => {
     });
 });
 
-server.listen({ host: HOST, port: PORT }, () => {
-    console.log(`Server start at ${HOST}:${PORT}`);
+server.listen({ host: HOST, port: PORT2 }, () => {
+    console.log(`Server start at ${HOST}:${PORT2}`);
 });

@@ -40,12 +40,12 @@ const server: Net.Server = Net.createServer((socket: Net.Socket): void => {
 
                 if (input.target == "monster") {
                     res.target = "monster";
-                    res.name = JSON.stringify(game.monster.getData());
+                    res.body = JSON.stringify(game.monster.getData());
                 } else if (input.target == "player") {
                     (async () => {
                         res.target = "player";
                         await game.login(input.name, socket, true);
-                        res.name = JSON.stringify(game.players.get(input.name));
+                        res.body = JSON.stringify(game.players.get(input.name));
                     })();
                 }
                 socket.write(JSON.stringify(res));

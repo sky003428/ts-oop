@@ -7,11 +7,11 @@ require("dotenv/config");
 const net_1 = __importDefault(require("net"));
 const game_1 = require("./game");
 const monster_1 = require("./monster");
-const { HOST, PORT } = process.env;
+const { HOST, PORT2 } = process.env;
 const game = new game_1.Game();
 const master = net_1.default.createConnection({ host: HOST, port: 3000 }, () => {
     console.log("Master connected", master.remotePort);
-    monster_1.Monster.fetch(master, PORT);
+    monster_1.Monster.fetch(master, PORT2);
     master.on("data", (dataBuffer) => {
         const dataArr = dataBuffer.toString().replace(/}{/g, "}}{{").split(/}{/g);
         try {
@@ -77,6 +77,6 @@ const server = net_1.default.createServer((socket) => {
         name && master.write(JSON.stringify({ type: "logout", body: "", name }));
     });
 });
-server.listen({ host: HOST, port: PORT }, () => {
-    console.log(`Server start at ${HOST}:${PORT}`);
+server.listen({ host: HOST, port: PORT2 }, () => {
+    console.log(`Server start at ${HOST}:${PORT2}`);
 });
