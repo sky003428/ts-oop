@@ -2,15 +2,22 @@ import Net from "net";
 import Db from "../modules/db";
 
 export default class Player {
-    public totalDamage: number = 0;
-    public attacktime: number = 0;
-    public maxDamage: number = 10;
+    public id: number;
+    public name: string;
+    public feather: boolean;
+    public title: string[];
+
     public socket: Net.Socket;
     public overSended: boolean = false;
+    private totalDamage: number = 0;
+    private attacktime: number = 0;
+    private maxDamage: number = 10;
 
-    constructor(public id: number, public name: string, public feather: boolean, public title: string[]) {
-        id = this.id;
-        name = this.name;
+    constructor(id: number, name: string, feather: boolean, title: string[]) {
+        this.id = id;
+        this.name = name;
+        this.feather = feather;
+        this.title = title;
     }
 
     public attack(monsterHp: number): number {
@@ -22,6 +29,10 @@ export default class Player {
         this.totalDamage += dmg;
         ++this.attacktime;
         return dmg;
+    }
+
+    public getAttackLog() {
+        return { total: this.totalDamage, time: this.attacktime };
     }
 
     public initialFightLog(): void {

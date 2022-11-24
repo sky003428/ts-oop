@@ -23,7 +23,7 @@ function parserInit(): Function {
             } catch (err) {
                 console.log("Content isn't JSON serializable");
                 buf = buf.subarray(0, bufOriginLength);
-                return [];
+                continue;
             }
         }
         return contentArray;

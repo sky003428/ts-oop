@@ -54,7 +54,7 @@ export class Game {
         // 傳回本次攻擊結果
         this.sendOutput(socket, {
             type: "fightLog",
-            body: `You attack Phoenix ${dmg} damage - total: ${player.totalDamage}`,
+            body: `You attack Phoenix ${dmg} damage - total: ${player.getAttackLog().total}`,
             name,
             isGameOver: false,
         });
@@ -70,19 +70,21 @@ export class Game {
     // 處理怪物死亡後的廣播, 及ks玩家拿到羽毛
     public gameOverTransmit(ksPlayer: string) {
         this.playingPlayers.forEach((p: Player) => {
+            const { total, time } = p.getAttackLog();
+
             if (p.name == ksPlayer) {
                 p.getFeather();
 
                 this.sendOutput(p.socket, {
                     type: "fightLog",
-                    body: `You Kill Phoenix, TotalDamage: ${p.totalDamage} - ${p.attacktime} times, Get "Feather"`,
+                    body: `You Kill Phoenix, TotalDamage: ${total} - ${total} times, Get "Feather"`,
                     name: p.name,
                     isGameOver: true,
                 });
             } else {
                 this.sendOutput(p.socket, {
                     type: "fightLog",
-                    body: `Phoenix died, TotalDamage: ${p.totalDamage} - ${p.attacktime} times`,
+                    body: `Phoenix died, TotalDamage: ${total} - ${time} times`,
                     name: p.name,
                     isGameOver: true,
                 });
