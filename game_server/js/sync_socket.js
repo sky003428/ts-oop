@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const net_1 = __importDefault(require("net"));
 const game_1 = require("./game_server/game");
+const monster_1 = __importDefault(require("./game_server/monster"));
 const packet_processor_1 = require("./modules/packet_processor");
 const SyncSocket = net_1.default.createServer((socket) => {
     console.log("Server", socket.remotePort, "on");
@@ -18,7 +19,7 @@ const SyncSocket = net_1.default.createServer((socket) => {
             }
             if (c.target == "monster") {
                 game_1.game.syncMonster(JSON.parse(c.body));
-                game_1.game.monster.socket = socket;
+                monster_1.default.socket = socket;
             }
         }
     });

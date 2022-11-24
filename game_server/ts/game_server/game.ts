@@ -64,7 +64,7 @@ export class Game {
             this.playingPlayers.clear();
 
             this.monster.monsterKilledBy(name);
-            Monster.create("鳳凰", this.monster.socket);
+            Monster.create("鳳凰");
         }
     }
     // 處理怪物死亡後的廣播, 及ks玩家拿到羽毛
@@ -152,6 +152,11 @@ export class Game {
             this.playingPlayers.forEach((p: Player) => {
                 this.fight(p.name, p.socket);
             });
+        } else {
+            // 第一次同步怪物, 若怪物死亡->復活怪物
+            if (game.monster.data.hp <= 0) {
+                Monster.create("鳳凰", 0);
+            }
         }
     }
 

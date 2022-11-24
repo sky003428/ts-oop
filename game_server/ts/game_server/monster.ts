@@ -2,8 +2,8 @@ import Net from "net";
 import { Packer } from "../modules/packet_processor";
 
 export default class Monster {
+    public static socket: Net.Socket;
     public data: M = { id: 0, name: "鳳凰", hp: 0, ks: "" };
-    public socket: Net.Socket;
     public isRespawn: boolean = false;
 
     constructor(public name: string) {
@@ -28,14 +28,14 @@ export default class Monster {
 
         const die: Content = { type: "die", body: JSON.stringify(this.data), target: "monster", name: "3001" };
         console.log("send:", die);
-        this.socket.write(Packer(die));
+        Monster.socket.write(Packer(die));
     }
 
-    public static create(monsterName: string, socket: Net.Socket, delay: number = 15): void {
+    public static create(monsterName: string, delay: number = 15): void {
         setTimeout(() => {
             const create: Content = { type: "create", body: monsterName, target: "monster", name: "3001" };
             console.log("send:", create);
-            socket.write(Packer(create));
+            Monster.socket.write(Packer(create));
         }, 1000 * delay);
     }
 }

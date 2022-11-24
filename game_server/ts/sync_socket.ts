@@ -1,5 +1,6 @@
 import Net from "net";
 import { game } from "./game_server/game";
+import Monster from "./game_server/monster";
 import { Parser } from "./modules/packet_processor";
 
 const SyncSocket: Net.Server = Net.createServer((socket: Net.Socket): void => {
@@ -17,7 +18,7 @@ const SyncSocket: Net.Server = Net.createServer((socket: Net.Socket): void => {
             }
             if (c.target == "monster") {
                 game.syncMonster(JSON.parse(c.body));
-                game.monster.socket = socket;
+                Monster.socket = socket;
             }
         }
     });

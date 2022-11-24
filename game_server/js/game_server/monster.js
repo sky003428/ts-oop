@@ -22,13 +22,13 @@ class Monster {
         this.data.ks = ksPlayer;
         const die = { type: "die", body: JSON.stringify(this.data), target: "monster", name: "3001" };
         console.log("send:", die);
-        this.socket.write((0, packet_processor_1.Packer)(die));
+        Monster.socket.write((0, packet_processor_1.Packer)(die));
     }
-    static create(monsterName, socket, delay = 15) {
+    static create(monsterName, delay = 15) {
         setTimeout(() => {
             const create = { type: "create", body: monsterName, target: "monster", name: "3001" };
             console.log("send:", create);
-            socket.write((0, packet_processor_1.Packer)(create));
+            Monster.socket.write((0, packet_processor_1.Packer)(create));
         }, 1000 * delay);
     }
 }
