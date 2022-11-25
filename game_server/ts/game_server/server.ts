@@ -1,12 +1,13 @@
 import Net from "net";
 import { Parser, Packer } from "../modules/packet_processor";
+import RpcType from "../modules/rpc_type";
 import { game } from "./game";
 
 const Server: Net.Server = Net.createServer((socket: Net.Socket): void => {
     console.log("client connected", socket.remotePort, "id");
     const welcomeMsg: Content = {
-        type: "msg",
-        body: `Welcome to <Phoenix> ,monster hp:${game.monster.data.hp}`,
+        type: RpcType.Message,
+        body: `Welcome to <Phoenix> ,monster hp:${game.monster.getData().hp}`,
         name: "main",
     };
     socket.write(Packer(welcomeMsg));
@@ -21,11 +22,11 @@ const Server: Net.Server = Net.createServer((socket: Net.Socket): void => {
                 return;
             }
             // 嘗試攻擊怪物
-            if (c.type == "fight") {
+            if (c.type == RpcType.Fight) {
                 game.fight(c.name, socket);
             }
             // 等待怪物復活回應
-            if (c.type == "res") {
+            if (c.type == RpcType.Response) {
                 game.response(c.name, socket, c.body);
             }
         }

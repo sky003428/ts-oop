@@ -1,16 +1,25 @@
 import Net from "net";
 import { Packer } from "../modules/packet_processor";
+import RpcType from "../modules/rpc_type";
 import Monster from "./monster";
 import Player from "./player";
 
 export class Game {
+    public static instance: Game = null;
     public players = new Map<string, Player>();
     public playingPlayers = new Map<string, Player>();
     public monster: Monster = new Monster("鳳凰");
+
+    public static init(): Game {
+        if (!this.instance) {
+            this.instance = new Game();
+        }
+        return this.instance;
+    }
     // 驗證是否登入
     public isLogged(name: string, socket: Net.Socket): boolean {
         if (!this.players.get(name)) {
-            const c: Content = { type: "err", body: "Error, You haven't logged", name };
+            const c: Content = { type: RpcType.Error, body: "Error, You haven't logged", name };
             this.sendOutput(socket, c);
             return false;
         }
@@ -23,7 +32,7 @@ export class Game {
         // 判斷是否擊殺過
         if (player.feather || player.title.includes("勇者")) {
             this.sendOutput(socket, {
-                type: "fightLog",
+                type: RpcType.FightLog,
                 body: "You've already kill the Phoenix",
                 name,
                 isGameOver: true,
@@ -31,14 +40,19 @@ export class Game {
             return;
         }
         // 判斷怪物是否存活
-        if (this.monster.data.hp <= 0) {
+        if (this.monster.getData().hp <= 0) {
             // 如果已發送遊戲結束訊息給玩家, 不再發送怪物死亡訊息
             if (player.overSended) {
                 return;
             }
-            this.sendOutput(socket, { type: "fightLog", body: "Monster has already died", name, isGameOver: true });
             this.sendOutput(socket, {
-                type: "req",
+                type: RpcType.FightLog,
+                body: "Monster has already died",
+                name,
+                isGameOver: true,
+            });
+            this.sendOutput(socket, {
+                type: RpcType.Request,
                 body: `Waitng for next Phoenix? (y/n)`,
                 name,
             });
@@ -48,18 +62,18 @@ export class Game {
 
         // 玩家進入戰鬥
         this.playingPlayers.set(name, player);
-        const dmg = player.attack(this.monster.data.hp);
+        const dmg = player.attack(this.monster.getData().hp);
         this.monster.beAttack(dmg);
 
         // 傳回本次攻擊結果
         this.sendOutput(socket, {
-            type: "fightLog",
+            type: RpcType.FightLog,
             body: `You attack Phoenix ${dmg} damage - total: ${player.getAttackLog().total}`,
             name,
             isGameOver: false,
         });
         // 怪物死亡處理
-        if (this.monster.data.hp <= 0) {
+        if (this.monster.getData().hp <= 0) {
             this.gameOverTransmit(name);
             this.playingPlayers.clear();
 
@@ -76,20 +90,20 @@ export class Game {
                 p.getFeather();
 
                 this.sendOutput(p.socket, {
-                    type: "fightLog",
+                    type: RpcType.FightLog,
                     body: `You Kill Phoenix, TotalDamage: ${total} - ${total} times, Get "Feather"`,
                     name: p.name,
                     isGameOver: true,
                 });
             } else {
                 this.sendOutput(p.socket, {
-                    type: "fightLog",
+                    type: RpcType.FightLog,
                     body: `Phoenix died, TotalDamage: ${total} - ${time} times`,
                     name: p.name,
                     isGameOver: true,
                 });
                 this.sendOutput(p.socket, {
-                    type: "req",
+                    type: RpcType.Request,
                     body: `Waitng for next Phoenix? (y/n)`,
                     name: p.name,
                 });
@@ -105,25 +119,25 @@ export class Game {
         const player = this.players.get(name);
         // valid
         if (player.feather || player.title.includes("勇者")) {
-            const c: Content = { type: "fightLog", body: "You've already kill the Phoenix", name };
+            const c: Content = { type: RpcType.FightLog, body: "You've already kill the Phoenix", name };
             this.sendOutput(socket, c);
             return;
         }
 
         if (body == "false") {
-            const c: Content = { type: "msg", body: "bye", name };
+            const c: Content = { type: RpcType.Message, body: "bye", name };
             socket.end(Packer(c));
         }
 
         // 怪還在等待復活
-        if (body == "true" && this.monster.data.hp <= 0) {
+        if (body == "true" && this.monster.getData().hp <= 0) {
             this.playingPlayers.set(name, player);
 
-            const c: Content = { type: "msg", body: "Waiting for Phoenix respawn...", name };
+            const c: Content = { type: RpcType.Message, body: "Waiting for Phoenix respawn...", name };
             this.sendOutput(socket, c);
         }
         // 怪已復活
-        if (body == "true" && this.monster.data.hp > 0) {
+        if (body == "true" && this.monster.getData().hp > 0) {
             this.fight(name, socket);
         }
     }
@@ -138,7 +152,7 @@ export class Game {
         const playerSnap = game.players.get(name);
         if (playerSnap) {
             const c: Content = {
-                type: "err",
+                type: RpcType.Error,
                 body: "this player has been login on another device",
                 name: name,
             };
@@ -156,7 +170,7 @@ export class Game {
             });
         } else {
             // 第一次同步怪物, 若怪物死亡->復活怪物
-            if (game.monster.data.hp <= 0) {
+            if (game.monster.getData().hp <= 0) {
                 Monster.create("鳳凰", 0);
             }
         }
@@ -175,4 +189,4 @@ export class Game {
     }
 }
 
-export const game = new Game();
+export const game = Game.init();

@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.game = exports.Game = void 0;
 const packet_processor_1 = require("../modules/packet_processor");
+const rpc_type_1 = __importDefault(require("../modules/rpc_type"));
 const monster_1 = __importDefault(require("./monster"));
 const player_1 = __importDefault(require("./player"));
 class Game {
@@ -16,7 +17,7 @@ class Game {
     // 驗證是否登入
     isLogged(name, socket) {
         if (!this.players.get(name)) {
-            const c = { type: "err", body: "Error, You haven't logged", name };
+            const c = { type: rpc_type_1.default.Error, body: "Error, You haven't logged", name };
             this.sendOutput(socket, c);
             return false;
         }
@@ -28,7 +29,7 @@ class Game {
         // 判斷是否擊殺過
         if (player.feather || player.title.includes("勇者")) {
             this.sendOutput(socket, {
-                type: "fightLog",
+                type: rpc_type_1.default.FightLog,
                 body: "You've already kill the Phoenix",
                 name,
                 isGameOver: true,
@@ -36,14 +37,19 @@ class Game {
             return;
         }
         // 判斷怪物是否存活
-        if (this.monster.data.hp <= 0) {
+        if (this.monster.getData().hp <= 0) {
             // 如果已發送遊戲結束訊息給玩家, 不再發送怪物死亡訊息
             if (player.overSended) {
                 return;
             }
-            this.sendOutput(socket, { type: "fightLog", body: "Monster has already died", name, isGameOver: true });
             this.sendOutput(socket, {
-                type: "req",
+                type: rpc_type_1.default.FightLog,
+                body: "Monster has already died",
+                name,
+                isGameOver: true,
+            });
+            this.sendOutput(socket, {
+                type: rpc_type_1.default.Request,
                 body: `Waitng for next Phoenix? (y/n)`,
                 name,
             });
@@ -51,17 +57,17 @@ class Game {
         }
         // 玩家進入戰鬥
         this.playingPlayers.set(name, player);
-        const dmg = player.attack(this.monster.data.hp);
+        const dmg = player.attack(this.monster.getData().hp);
         this.monster.beAttack(dmg);
         // 傳回本次攻擊結果
         this.sendOutput(socket, {
-            type: "fightLog",
-            body: `You attack Phoenix ${dmg} damage - total: ${player.totalDamage}`,
+            type: rpc_type_1.default.FightLog,
+            body: `You attack Phoenix ${dmg} damage - total: ${player.getAttackLog().total}`,
             name,
             isGameOver: false,
         });
         // 怪物死亡處理
-        if (this.monster.data.hp <= 0) {
+        if (this.monster.getData().hp <= 0) {
             this.gameOverTransmit(name);
             this.playingPlayers.clear();
             this.monster.monsterKilledBy(name);
@@ -71,24 +77,25 @@ class Game {
     // 處理怪物死亡後的廣播, 及ks玩家拿到羽毛
     gameOverTransmit(ksPlayer) {
         this.playingPlayers.forEach((p) => {
+            const { total, time } = p.getAttackLog();
             if (p.name == ksPlayer) {
                 p.getFeather();
                 this.sendOutput(p.socket, {
-                    type: "fightLog",
-                    body: `You Kill Phoenix, TotalDamage: ${p.totalDamage} - ${p.attacktime} times, Get "Feather"`,
+                    type: rpc_type_1.default.FightLog,
+                    body: `You Kill Phoenix, TotalDamage: ${total} - ${total} times, Get "Feather"`,
                     name: p.name,
                     isGameOver: true,
                 });
             }
             else {
                 this.sendOutput(p.socket, {
-                    type: "fightLog",
-                    body: `Phoenix died, TotalDamage: ${p.totalDamage} - ${p.attacktime} times`,
+                    type: rpc_type_1.default.FightLog,
+                    body: `Phoenix died, TotalDamage: ${total} - ${time} times`,
                     name: p.name,
                     isGameOver: true,
                 });
                 this.sendOutput(p.socket, {
-                    type: "req",
+                    type: rpc_type_1.default.Request,
                     body: `Waitng for next Phoenix? (y/n)`,
                     name: p.name,
                 });
@@ -102,22 +109,22 @@ class Game {
         const player = this.players.get(name);
         // valid
         if (player.feather || player.title.includes("勇者")) {
-            const c = { type: "fightLog", body: "You've already kill the Phoenix", name };
+            const c = { type: rpc_type_1.default.FightLog, body: "You've already kill the Phoenix", name };
             this.sendOutput(socket, c);
             return;
         }
         if (body == "false") {
-            const c = { type: "msg", body: "bye", name };
+            const c = { type: rpc_type_1.default.Message, body: "bye", name };
             socket.end((0, packet_processor_1.Packer)(c));
         }
         // 怪還在等待復活
-        if (body == "true" && this.monster.data.hp <= 0) {
+        if (body == "true" && this.monster.getData().hp <= 0) {
             this.playingPlayers.set(name, player);
-            const c = { type: "msg", body: "Waiting for Phoenix respawn...", name };
+            const c = { type: rpc_type_1.default.Message, body: "Waiting for Phoenix respawn...", name };
             this.sendOutput(socket, c);
         }
         // 怪已復活
-        if (body == "true" && this.monster.data.hp > 0) {
+        if (body == "true" && this.monster.getData().hp > 0) {
             this.fight(name, socket);
         }
     }
@@ -131,7 +138,7 @@ class Game {
         const playerSnap = exports.game.players.get(name);
         if (playerSnap) {
             const c = {
-                type: "err",
+                type: rpc_type_1.default.Error,
                 body: "this player has been login on another device",
                 name: name,
             };
@@ -148,8 +155,8 @@ class Game {
             });
         }
         else {
-            // 第一次同步怪物,怪物死亡的話復活怪物
-            if (exports.game.monster.data.hp <= 0) {
+            // 第一次同步怪物, 若怪物死亡->復活怪物
+            if (exports.game.monster.getData().hp <= 0) {
                 monster_1.default.create("鳳凰", 0);
             }
         }

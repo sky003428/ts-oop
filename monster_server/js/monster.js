@@ -6,16 +6,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Monster = void 0;
 const db_1 = __importDefault(require("./modules/db"));
 const packet_processor_1 = require("./modules/packet_processor");
+const rpc_type_1 = __importDefault(require("./modules/rpc_type"));
 class Monster {
-    constructor() {
-        this.serverName = "3002";
+    static async init(name) {
+        if (!Monster.instance) {
+            Monster.instance = new Monster();
+        }
+        await Monster.instance.getMonster(name);
+        return Monster.instance;
     }
     getMonster(name) {
         return new Promise((res, rej) => {
             db_1.default.query("SELECT * FROM monster WHERE name = ? ORDER BY id DESC LIMIT 1;", name, (err, row) => {
                 if (err) {
                     // todo
-                    this.output = { type: "err", body: "ERROR! Can't get monster", name: this.serverName };
+                    this.output = { type: rpc_type_1.default.Error, body: "ERROR! Can't get monster", name: Monster.serverName };
                     return rej(err);
                 }
                 if (!row[0]) {
@@ -31,7 +36,7 @@ class Monster {
         return new Promise((res, rej) => {
             db_1.default.query("INSERT INTO `monster` ( `name`,`ks`, `born_at`) VALUES ( ? ,'', NOW())", name, (err, row) => {
                 if (err) {
-                    this.output = { type: "err", body: "ERROR! Can't create player", name: this.serverName };
+                    this.output = { type: rpc_type_1.default.Error, body: "ERROR! Can't create player", name: Monster.serverName };
                     return rej(err);
                 }
                 console.log("Phoenix respawn!!");
@@ -44,7 +49,7 @@ class Monster {
         return new Promise((res, rej) => {
             db_1.default.query("UPDATE `monster` SET `hp` = ?, `ks` = ? WHERE `monster`.`id` = ?", [data.hp, data.ks, data.id], (err, row) => {
                 if (err) {
-                    this.output = { type: "err", body: "ERROR! Can't create player", name: data.name };
+                    this.output = { type: rpc_type_1.default.Error, body: "ERROR! Can't create player", name: data.name };
                     return rej(err);
                 }
                 console.log("Phoenix update");
@@ -54,9 +59,11 @@ class Monster {
         });
     }
     sync(main) {
-        const c = { type: "sync", target: "monster", body: JSON.stringify(this.data), name: "3002" };
+        const c = { type: rpc_type_1.default.Sync, target: "monster", body: JSON.stringify(this.data), name: "3002" };
         console.log("sync", c);
         main.write((0, packet_processor_1.Packer)(c));
     }
 }
 exports.Monster = Monster;
+Monster.serverName = "3002";
+Monster.instance = null;

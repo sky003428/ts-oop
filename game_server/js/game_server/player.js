@@ -6,16 +6,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const db_1 = __importDefault(require("../modules/db"));
 class Player {
     constructor(id, name, feather, title) {
+        this.overSended = false;
+        this.totalDamage = 0;
+        this.attacktime = 0;
+        this.maxDamage = 10;
         this.id = id;
         this.name = name;
         this.feather = feather;
         this.title = title;
-        this.totalDamage = 0;
-        this.attacktime = 0;
-        this.maxDamage = 10;
-        this.overSended = false;
-        id = this.id;
-        name = this.name;
     }
     attack(monsterHp) {
         let dmg = Math.ceil(Math.random() * this.maxDamage) + 5;
@@ -25,6 +23,9 @@ class Player {
         this.totalDamage += dmg;
         ++this.attacktime;
         return dmg;
+    }
+    getAttackLog() {
+        return { total: this.totalDamage, time: this.attacktime };
     }
     initialFightLog() {
         this.totalDamage = 0;

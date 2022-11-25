@@ -5,12 +5,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const net_1 = __importDefault(require("net"));
 const packet_processor_1 = require("../modules/packet_processor");
+const rpc_type_1 = __importDefault(require("../modules/rpc_type"));
 const game_1 = require("./game");
 const Server = net_1.default.createServer((socket) => {
     console.log("client connected", socket.remotePort, "id");
     const welcomeMsg = {
-        type: "msg",
-        body: `Welcome to <Phoenix> ,monster hp:${game_1.game.monster.data.hp}`,
+        type: rpc_type_1.default.Message,
+        body: `Welcome to <Phoenix> ,monster hp:${game_1.game.monster.getData().hp}`,
         name: "main",
     };
     socket.write((0, packet_processor_1.Packer)(welcomeMsg));
@@ -23,11 +24,11 @@ const Server = net_1.default.createServer((socket) => {
                 return;
             }
             // 嘗試攻擊怪物
-            if (c.type == "fight") {
+            if (c.type == rpc_type_1.default.Fight) {
                 game_1.game.fight(c.name, socket);
             }
             // 等待怪物復活回應
-            if (c.type == "res") {
+            if (c.type == rpc_type_1.default.Response) {
                 game_1.game.response(c.name, socket, c.body);
             }
         }

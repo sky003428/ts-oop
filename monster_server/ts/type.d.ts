@@ -1,5 +1,5 @@
 interface Content {
-    type: string;
+    type: RpcType;
     body: string;
     name: string;
     target?: string;
