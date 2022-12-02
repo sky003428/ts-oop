@@ -1,14 +1,17 @@
 import Net from "net";
 import { Packer } from "../modules/packet_processor";
-import RpcType from "../modules/rpc_type";
 import Monster from "./monster";
 import Player from "./player";
+import Output from "../modules/handle_output";
 
 export class Game {
     public static instance: Game = null;
     public players = new Map<string, Player>();
     public playingPlayers = new Map<string, Player>();
     public monster: Monster = new Monster("鳳凰");
+    private attackQueue: string[] = [];
+    private attackLoopTimer: NodeJS.Timer;
+    private tickRate: number = 20;
 
     public static init(): Game {
         if (!this.instance) {
@@ -19,161 +22,166 @@ export class Game {
     // 驗證是否登入
     public isLogged(name: string, socket: Net.Socket): boolean {
         if (!this.players.get(name)) {
-            const c: Content = { type: RpcType.Error, body: "Error, You haven't logged", name };
-            this.sendOutput(socket, c);
+            this.sendOutput(socket, Output(name).err.login);
             return false;
         }
         this.players.get(name).socket = socket;
         return true;
     }
 
-    public async fight(name: string, socket: Net.Socket): Promise<void> {
+    public enterAttackQueue(name: string, socket: Net.Socket) {
         const player = this.players.get(name);
+        this.playingPlayers.set(name, player);
+
+        // 已在隊列
+        if (this.attackQueue.includes(name) || player.gameOverSend) {
+            return;
+        }
         // 判斷是否擊殺過
         if (player.feather || player.title.includes("勇者")) {
-            this.sendOutput(socket, {
-                type: RpcType.FightLog,
-                body: "You've already kill the Phoenix",
-                name,
-                isGameOver: true,
-            });
+            this.sendOutput(socket, Output(name).fightLog.alreadyKill);
             return;
         }
         // 判斷怪物是否存活
         if (this.monster.getData().hp <= 0) {
-            // 如果已發送遊戲結束訊息給玩家, 不再發送怪物死亡訊息
-            if (player.overSended) {
-                return;
-            }
-            this.sendOutput(socket, {
-                type: RpcType.FightLog,
-                body: "Monster has already died",
-                name,
-                isGameOver: true,
-            });
-            this.sendOutput(socket, {
-                type: RpcType.Request,
-                body: `Waitng for next Phoenix? (y/n)`,
-                name,
-            });
+            this.sendOutput(socket, Output(name).fightLog.alreadyDied);
+            this.sendOutput(socket, Output(name).req.waitMonster);
 
             return;
         }
 
-        // 玩家進入戰鬥
-        this.playingPlayers.set(name, player);
-        const dmg = player.attack(this.monster.getData().hp);
-        this.monster.beAttack(dmg);
-
-        // 傳回本次攻擊結果
-        this.sendOutput(socket, {
-            type: RpcType.FightLog,
-            body: `You attack Phoenix ${dmg} damage - total: ${player.getAttackLog().total}`,
-            name,
-            isGameOver: false,
-        });
-        // 怪物死亡處理
-        if (this.monster.getData().hp <= 0) {
-            this.gameOverTransmit(name);
-            this.playingPlayers.clear();
-
-            this.monster.monsterKilledBy(name);
-            Monster.create("鳳凰");
-        }
+        this.attackQueue.push(name);
+        this.openTimer();
     }
-    // 處理怪物死亡後的廣播, 及ks玩家拿到羽毛
-    public gameOverTransmit(ksPlayer: string) {
-        this.playingPlayers.forEach((p: Player) => {
-            const { total, time } = p.getAttackLog();
 
-            if (p.name == ksPlayer) {
-                p.getFeather();
-
-                this.sendOutput(p.socket, {
-                    type: RpcType.FightLog,
-                    body: `You Kill Phoenix, TotalDamage: ${total} - ${total} times, Get "Feather"`,
-                    name: p.name,
-                    isGameOver: true,
-                });
-            } else {
-                this.sendOutput(p.socket, {
-                    type: RpcType.FightLog,
-                    body: `Phoenix died, TotalDamage: ${total} - ${time} times`,
-                    name: p.name,
-                    isGameOver: true,
-                });
-                this.sendOutput(p.socket, {
-                    type: RpcType.Request,
-                    body: `Waitng for next Phoenix? (y/n)`,
-                    name: p.name,
-                });
+    private openTimer(): void {
+        if (this.attackLoopTimer) return;
+        console.log("開啟timer");
+        this.attackLoopTimer = setInterval(() => {
+            if (this.attackQueue.length == 0) {
+                this.closeTimer();
+                return;
             }
+            this.fightLoop();
+        }, 1000 / this.tickRate);
+    }
+    private closeTimer(): void {
+        console.log("關閉timer");
+        clearTimeout(this.attackLoopTimer);
+        this.attackLoopTimer = null;
+    }
 
-            p.overSended = true;
-            p.initialFightLog();
-        });
+    private fightLoop(): void {
+        // 玩家進入戰鬥
+        // this.playingPlayers.set(name, player);
+        for (let name of this.attackQueue) {
+            const player: Player = this.players.get(name);
+
+            const dmg = player.attack();
+            this.monster.beAttack(dmg, name);
+        }
+        this.attackQueue = [];
     }
 
     // 處理玩家回應
     public response(name: string, socket: Net.Socket, body: string) {
         const player = this.players.get(name);
+        player.gameOverSend = false;
         // valid
         if (player.feather || player.title.includes("勇者")) {
-            const c: Content = { type: RpcType.FightLog, body: "You've already kill the Phoenix", name };
+            const c: Content = Output(name).fightLog.alreadyKill;
             this.sendOutput(socket, c);
             return;
         }
 
         if (body == "false") {
-            const c: Content = { type: RpcType.Message, body: "bye", name };
-            socket.end(Packer(c));
+            this.sendOutput(socket, Output(name).msg.bye, true);
         }
 
-        // 怪還在等待復活
-        if (body == "true" && this.monster.getData().hp <= 0) {
+        if (body == "true") {
             this.playingPlayers.set(name, player);
-
-            const c: Content = { type: RpcType.Message, body: "Waiting for Phoenix respawn...", name };
-            this.sendOutput(socket, c);
+            this.attackQueue.push(name);
+            console.log("push進q");
+            console.log("monster hp", this.monster.getData().hp);
+            if (this.monster.getData().hp <= 0) {
+                console.log("怪死的");
+                this.sendOutput(socket, Output(name).msg.waiting);
+            } else {
+                this.openTimer();
+            }
         }
-        // 怪已復活
-        if (body == "true" && this.monster.getData().hp > 0) {
-            this.fight(name, socket);
-        }
-    }
-    // 處理回覆玩家
-    public sendOutput(socket: Net.Socket, content: Content): void {
-        socket.write(Packer(content));
     }
 
     // 從Login Server同步玩家登入資料
     public syncPlayer(player: P) {
         const { id, name, feather, title } = player;
-        const playerSnap = game.players.get(name);
-        if (playerSnap) {
-            const c: Content = {
-                type: RpcType.Error,
-                body: "this player has been login on another device",
-                name: name,
-            };
-            playerSnap.socket.end(Packer(c));
+
+        // 重複登入
+        if (game.players.get(name)) {
+            this.sendOutput(game.players.get(name).socket, Output(name).err.repeatLog, true);
         }
 
         game.players.set(name, new Player(id, name, feather, title));
     }
+
+    // Monster Server
+    public handleAttackLog(c: Content) {
+        const { body, name, ks, isGameOver } = c;
+        const trueDamage = +body;
+        const p: Player = this.playingPlayers.get(name);
+        let { total, time } = p.getAttackLog();
+
+        // 已傳送遊戲結束
+        if (p.gameOverSend) {
+            return;
+        }
+
+        // 怪死 從未攻擊
+        if (trueDamage == 0 && total == 0) {
+            this.sendOutput(p.socket, Output(name).fightLog.alreadyDied);
+            p.gameOverSend = true;
+            return;
+        }
+        // 怪死 無尾刀
+        if (trueDamage == 0 && total > 0) {
+            this.sendOutput(p.socket, Output(name).attackOver(total, time));
+            this.sendOutput(p.socket, Output(name).req.waitMonster);
+            p.initialFightLog();
+            p.gameOverSend = true;
+            return;
+        }
+
+        // 更新本次攻擊紀錄
+        total = p.setAttackLog().total(total + trueDamage);
+        time = p.setAttackLog().time(time + 1);
+
+        this.sendOutput(p.socket, Output(name).attacking(trueDamage, total, time));
+
+        // 攻擊到
+        // 怪死 且尾刀
+        if (ks) {
+            this.sendOutput(p.socket, Output(name).killSteal(total, time));
+            p.getFeather();
+            p.initialFightLog();
+            p.gameOverSend = true;
+        }
+    }
+
     //  從Monster Server同步怪物資料
     public syncMonster(monsterData: M) {
         const isRespawn: boolean = game.monster.setData(monsterData);
         if (isRespawn) {
-            this.playingPlayers.forEach((p: Player) => {
-                this.fight(p.name, p.socket);
-            });
-        } else {
-            // 第一次同步怪物, 若怪物死亡->復活怪物
-            if (game.monster.getData().hp <= 0) {
-                Monster.create("鳳凰", 0);
-            }
+            this.openTimer();
         }
+    }
+
+    // 處理回覆玩家
+    private sendOutput(socket: Net.Socket, content: Content, end: boolean = false): void {
+        if (end) {
+            socket.end(Packer(content));
+            return;
+        }
+        socket.write(Packer(content));
     }
 
     public logout(port: number): void {
@@ -181,6 +189,7 @@ export class Game {
             if (port == player.socket.remotePort) {
                 this.players.delete(name);
                 this.playingPlayers.delete(name);
+                this.attackQueue.splice(this.attackQueue.indexOf(name), 1);
                 console.log(`Player: ${name} has disconnected`);
 
                 break;

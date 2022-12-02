@@ -7,11 +7,10 @@ enum RpcType {
     Error = "err",
     Sync = "sync",
     // Monster
-    BeAttack = "beAtk",
-    AttackLog = "aatackLog",
+    beAttack = "beAtk",
+    Die = "die",
     Create = "create",
     // Login
     Login = "login",
 }
-
 export default RpcType;

@@ -10,7 +10,8 @@ var RpcType;
     RpcType["Error"] = "err";
     RpcType["Sync"] = "sync";
     // Monster
-    RpcType["Die"] = "die";
+    RpcType["BeAttack"] = "beAtk";
+    RpcType["AttackLog"] = "aatackLog";
     RpcType["Create"] = "create";
     // Login
     RpcType["Login"] = "login";

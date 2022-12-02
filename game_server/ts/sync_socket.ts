@@ -2,6 +2,7 @@ import Net from "net";
 import { game } from "./game_server/game";
 import Monster from "./game_server/monster";
 import { Parser } from "./modules/packet_processor";
+import RpcType from "./modules/rpc_type";
 
 const SyncSocket: Net.Server = Net.createServer((socket: Net.Socket): void => {
     console.log("Server", socket.remotePort, "on");
@@ -15,10 +16,15 @@ const SyncSocket: Net.Server = Net.createServer((socket: Net.Socket): void => {
 
             if (c.target == "player") {
                 game.syncPlayer(JSON.parse(c.body));
+                continue;
             }
-            if (c.target == "monster") {
+            if (c.target == "monster" && c.type == RpcType.Sync) {
                 game.syncMonster(JSON.parse(c.body));
                 Monster.socket = socket;
+                continue;
+            }
+            if (c.target == "monster" && c.type == RpcType.AttackLog) {
+                game.handleAttackLog(c);
             }
         }
     });

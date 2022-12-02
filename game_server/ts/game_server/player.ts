@@ -8,10 +8,10 @@ export default class Player {
     public title: string[];
 
     public socket: Net.Socket;
-    public overSended: boolean = false;
+    public gameOverSend: boolean = false;
     private totalDamage: number = 0;
     private attacktime: number = 0;
-    private maxDamage: number = 10;
+    private maxDamage: number = 50;
 
     constructor(id: number, name: string, feather: boolean, title: string[]) {
         this.id = id;
@@ -20,19 +20,23 @@ export default class Player {
         this.title = title;
     }
 
-    public attack(monsterHp: number): number {
-        let dmg: number = Math.ceil(Math.random() * this.maxDamage) + 5;
-        if (dmg > monsterHp) {
-            dmg = monsterHp;
-        }
-
-        this.totalDamage += dmg;
-        ++this.attacktime;
-        return dmg;
+    public attack(): number {
+        return Math.ceil(Math.random() * this.maxDamage) + 50;
     }
 
-    public getAttackLog() {
+    public getAttackLog(): { total: number; time: number } {
         return { total: this.totalDamage, time: this.attacktime };
+    }
+
+    public setAttackLog(): { total: Function; time: Function } {
+        return {
+            total: (newTotal: number): number => {
+                return (this.totalDamage = newTotal);
+            },
+            time: (newTime: number): number => {
+                return (this.attacktime = newTime);
+            },
+        };
     }
 
     public initialFightLog(): void {

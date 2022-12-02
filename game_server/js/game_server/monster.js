@@ -11,8 +11,10 @@ class Monster {
         this.isRespawn = false;
         this.name = name;
     }
-    beAttack(dmg) {
-        this.data.hp -= dmg;
+    beAttack(dmg, name) {
+        // this.data.hp -= dmg;
+        const c = { type: rpc_type_1.default.BeAttack, body: dmg.toString(), target: "monster", name };
+        Monster.socket.write((0, packet_processor_1.Packer)(c));
     }
     getData() {
         return this.data;
@@ -22,20 +24,6 @@ class Monster {
         this.isRespawn = true;
         this.data = data;
         return isRespawnSnap;
-    }
-    monsterKilledBy(ksPlayer) {
-        console.log(`<Phoenix> has died, kill by ${ksPlayer}`);
-        this.data.ks = ksPlayer;
-        const die = { type: rpc_type_1.default.Die, body: JSON.stringify(this.data), target: "monster", name: "3001" };
-        console.log("send:", die);
-        Monster.socket.write((0, packet_processor_1.Packer)(die));
-    }
-    static create(monsterName, delay = 15) {
-        setTimeout(() => {
-            const create = { type: rpc_type_1.default.Create, body: monsterName, target: "monster", name: "3001" };
-            console.log("send:", create);
-            Monster.socket.write((0, packet_processor_1.Packer)(create));
-        }, 1000 * delay);
     }
 }
 exports.default = Monster;

@@ -12,8 +12,10 @@ export default class Monster {
         this.name = name;
     }
 
-    public beAttack(dmg: number): void {
-        this.data.hp -= dmg;
+    public beAttack(dmg: number, name: string): void {
+        // this.data.hp -= dmg;
+        const c: Content = { type: RpcType.BeAttack, body: dmg.toString(), target: "monster", name };
+        Monster.socket.write(Packer(c));
     }
 
     public getData() {
@@ -26,22 +28,5 @@ export default class Monster {
 
         this.data = data;
         return isRespawnSnap;
-    }
-
-    public monsterKilledBy(ksPlayer: string): void {
-        console.log(`<Phoenix> has died, kill by ${ksPlayer}`);
-        this.data.ks = ksPlayer;
-
-        const die: Content = { type: RpcType.Die, body: JSON.stringify(this.data), target: "monster", name: "3001" };
-        console.log("send:", die);
-        Monster.socket.write(Packer(die));
-    }
-
-    public static create(monsterName: string, delay: number = 15): void {
-        setTimeout(() => {
-            const create: Content = { type: RpcType.Create, body: monsterName, target: "monster", name: "3001" };
-            console.log("send:", create);
-            Monster.socket.write(Packer(create));
-        }, 1000 * delay);
     }
 }

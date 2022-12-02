@@ -4,6 +4,7 @@ interface Content {
     name: string;
     target?: string;
     success?: boolean;
+    ks?: boolean;
     isGameOver?: boolean;
 }
 

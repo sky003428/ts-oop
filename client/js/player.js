@@ -22,9 +22,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const ReadLine = __importStar(require("readline/promises"));
 const packet_processor_1 = require("./modules/packet_processor");
+const rpc_type_1 = __importDefault(require("./modules/rpc_type"));
 const rl = ReadLine.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -50,13 +54,13 @@ class Player {
     setTimer(client) {
         this.isAttacking = true;
         this.attackTimer = setInterval(() => {
-            const content = { type: "fight", body: "", name: this.name };
+            const content = { type: rpc_type_1.default.Fight, body: "", name: this.name };
             client.write((0, packet_processor_1.Packer)(content));
         }, 10);
     }
     ask(body, client) {
         rl.question(body).then((input) => {
-            const content = { type: "res", body: "", name: this.name };
+            const content = { type: rpc_type_1.default.Response, body: "", name: this.name };
             if (/^Y/im.test(input)) {
                 content.body = "true";
             }

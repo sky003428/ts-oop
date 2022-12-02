@@ -13,14 +13,12 @@ function StartSync() {
     });
     exports.Main.on("error", (err) => {
         console.log(err);
-        if (/ECONNREFUSED/g.test(err.message)) {
-            console.log(`Try reconnect in 5 secs... (${tryTime})`);
-            setTimeout(() => {
-                ++tryTime;
-                StartSync();
-                return;
-            }, 5000);
-        }
+        console.log(`Try reconnect in 5 secs... (${tryTime})`);
+        setTimeout(() => {
+            ++tryTime;
+            StartSync();
+            return;
+        }, 5000);
     });
 }
 exports.StartSync = StartSync;

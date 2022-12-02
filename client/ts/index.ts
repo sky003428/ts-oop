@@ -1,6 +1,7 @@
 import Net from "net";
 import Player from "./player";
 import { Packer, Parser } from "./modules/packet_processor";
+import RpcType from "./modules/rpc_type";
 
 enum Server {
     login = 3000,
@@ -17,7 +18,7 @@ async function start(): Promise<void> {
     }
 
     let client: Net.Socket = Net.createConnection({ host: "127.0.0.1", port }, () => {
-        const content: Content = { type: "login", body: "", name: player.name };
+        const content: Content = { type: RpcType.Login, body: "", name: player.name };
         if (port == Server.login) {
             console.log("login");
             client.write(Packer(content));
@@ -40,7 +41,7 @@ async function start(): Promise<void> {
             const showType: string[] = ["msg", "err", "fightLog"];
             showType.includes(c.type) && console.log(c.body);
 
-            if (c.type == "login" && c.success) {
+            if (c.type == RpcType.Login && c.success) {
                 port = Server.main;
                 client.destroy();
 
@@ -48,13 +49,13 @@ async function start(): Promise<void> {
                 return;
             }
 
-            if (c.type == "fightLog") {
+            if (c.type == RpcType.FightLog) {
                 player.isGameOver = c.isGameOver;
                 player.fight(client);
                 continue;
             }
 
-            if (c.type == "req") {
+            if (c.type == RpcType.Request) {
                 player.ask(c.body, client);
             }
         }

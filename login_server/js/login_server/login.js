@@ -53,3 +53,4 @@ class Login {
     }
 }
 exports.Login = Login;
+Login.instance = null;

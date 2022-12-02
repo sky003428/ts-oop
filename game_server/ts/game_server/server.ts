@@ -1,6 +1,6 @@
 import Net from "net";
-import { Parser, Packer } from "../modules/packet_processor";
 import RpcType from "../modules/rpc_type";
+import { Parser, Packer } from "../modules/packet_processor";
 import { game } from "./game";
 
 const Server: Net.Server = Net.createServer((socket: Net.Socket): void => {
@@ -19,15 +19,18 @@ const Server: Net.Server = Net.createServer((socket: Net.Socket): void => {
             const c: Content = contents[i];
             // 驗證是否登入
             if (!game.isLogged(c.name, socket)) {
-                return;
+                continue;
             }
             // 嘗試攻擊怪物
             if (c.type == RpcType.Fight) {
-                game.fight(c.name, socket);
+                game.enterAttackQueue(c.name, socket);
+                // game.fight(c.name, socket);
+                continue;
             }
             // 等待怪物復活回應
             if (c.type == RpcType.Response) {
                 game.response(c.name, socket, c.body);
+                continue;
             }
         }
     });

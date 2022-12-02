@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const net_1 = __importDefault(require("net"));
 const player_1 = __importDefault(require("./player"));
 const packet_processor_1 = require("./modules/packet_processor");
+const rpc_type_1 = __importDefault(require("./modules/rpc_type"));
 var Server;
 (function (Server) {
     Server[Server["login"] = 3000] = "login";
@@ -19,7 +20,7 @@ async function start() {
         await player.login();
     }
     let client = net_1.default.createConnection({ host: "127.0.0.1", port }, () => {
-        const content = { type: "login", body: "", name: player.name };
+        const content = { type: rpc_type_1.default.Login, body: "", name: player.name };
         if (port == Server.login) {
             console.log("login");
             client.write((0, packet_processor_1.Packer)(content));
@@ -37,18 +38,18 @@ async function start() {
             const c = contents[i];
             const showType = ["msg", "err", "fightLog"];
             showType.includes(c.type) && console.log(c.body);
-            if (c.type == "login" && c.success) {
+            if (c.type == rpc_type_1.default.Login && c.success) {
                 port = Server.main;
                 client.destroy();
                 start();
                 return;
             }
-            if (c.type == "fightLog") {
+            if (c.type == rpc_type_1.default.FightLog) {
                 player.isGameOver = c.isGameOver;
                 player.fight(client);
                 continue;
             }
-            if (c.type == "req") {
+            if (c.type == rpc_type_1.default.Request) {
                 player.ask(c.body, client);
             }
         }

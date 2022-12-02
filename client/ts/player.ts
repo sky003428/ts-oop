@@ -1,6 +1,7 @@
 import Net from "net";
 import * as ReadLine from "readline/promises";
 import { Packer } from "./modules/packet_processor";
+import RpcType from "./modules/rpc_type";
 
 const rl = ReadLine.createInterface({
     input: process.stdin,
@@ -31,14 +32,14 @@ export default class Player {
     public setTimer(client: Net.Socket): void {
         this.isAttacking = true;
         this.attackTimer = setInterval(() => {
-            const content: Content = { type: "fight", body: "", name: this.name };
+            const content: Content = { type: RpcType.Fight, body: "", name: this.name };
             client.write(Packer(content));
         }, 10);
     }
 
     public ask(body: string, client: Net.Socket): void {
         rl.question(body).then((input: string) => {
-            const content: Content = { type: "res", body: "", name: this.name };
+            const content: Content = { type: RpcType.Response, body: "", name: this.name };
 
             if (/^Y/im.test(input)) {
                 content.body = "true";

@@ -7,6 +7,7 @@ const net_1 = __importDefault(require("net"));
 const game_1 = require("./game_server/game");
 const monster_1 = __importDefault(require("./game_server/monster"));
 const packet_processor_1 = require("./modules/packet_processor");
+const rpc_type_1 = __importDefault(require("./modules/rpc_type"));
 const SyncSocket = net_1.default.createServer((socket) => {
     console.log("Server", socket.remotePort, "on");
     socket.on("data", async (dataBuffer) => {
@@ -16,10 +17,15 @@ const SyncSocket = net_1.default.createServer((socket) => {
             console.log("sync:", c);
             if (c.target == "player") {
                 game_1.game.syncPlayer(JSON.parse(c.body));
+                continue;
             }
-            if (c.target == "monster") {
+            if (c.target == "monster" && c.type == rpc_type_1.default.Sync) {
                 game_1.game.syncMonster(JSON.parse(c.body));
                 monster_1.default.socket = socket;
+                continue;
+            }
+            if (c.target == "monster" && c.type == rpc_type_1.default.AttackLog) {
+                game_1.game.handleAttackLog(c);
             }
         }
     });
